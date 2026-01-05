@@ -1,0 +1,15 @@
+<html>
+    Order Page
+    <header>AeroAid</header>
+    <div class="container">
+        <div class="order-box">
+            <h2>Order Details</h2>
+            <p>Location: <span id="orderLocation"></span></p>
+            <p>Medical Aid: <span id="orderItem"></span></p>
+        </div>
+    </div>
+    <script>
+        const orderLocation = sessionStorage.getItem("orderLocation");
+        const orderItem = sessionStorage.getItem("orderItem");
+    </script>
+</html>
