@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroAid - Order History</title>
+    <style>
+        /* Standard layout (same as other pages) */
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; position: relative; }
+        .container { width: 90%; max-width: 500px; margin-top: 20px; }
+
+        /* Hamburger (shared) */
+        .hamburger {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 26px;
+            height: 22px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .hamburger-line { height: 3px; background: #ffffff; border-radius: 2px; }
+        .hamburger-menu {
+            position: fixed;
+            top: 55px;
+            left: 10px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            width: 180px;
+            display: none;
+            z-index: 300;
+            overflow: hidden;
+        }
+        .hamburger-menu a,
+        .hamburger-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            text-align: left;
+            border: none;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        .hamburger-menu a {
+            text-decoration: none;
+            color: #333;
+        }
+        .hamburger-menu a:hover,
+        .hamburger-menu button:hover {
+            background: #f5f5f5;
+        }
+        .hamburger-menu a.active {
+            background: #ffe6e6;
+            color: #b30000;
+            font-weight: bold;
+        }
+        .hamburger-menu button {
+            color: #333;
+            border-top: 1px solid #eee; /* separator line before Logout */
+            font-weight: normal;
+        }
+
+        /* History page */
+        .selection-box { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { font-size: 20px; margin: 0 0 10px 0; color: #333; }
+        .sub-text { font-size: 13px; color: #777; margin-bottom: 15px; }
+
+        .history-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+        .history-card {
+            background: #fafafa;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+        }
+        .history-card.clickable {
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .history-card.clickable:hover {
+            border-color: #b30000;
+            background: #fff8f8;
+        }
+        .history-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+        .history-label { font-weight: bold; color: #555; }
+        .history-value { color: #333; font-weight: 500; text-align: right; }
+
+        .status-chip {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 6px;
+            align-self: flex-end;
+        }
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-completed {
+            background: #e2e3e5;
+            color: #6c757d;
+        }
+
+        .complete-btn {
+            margin-top: 8px;
+            padding: 8px 16px;
+            background: #b30000;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            align-self: flex-start;
+            transition: 0.2s;
+        }
+        .complete-btn:hover {
+            background: #8e0000;
+        }
+        .complete-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            font-size: 14px;
+            color: #777;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="hamburger" onclick="toggleHamburger()">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </div>
+        AeroAid
+    </header>
+
+    <div class="hamburger-menu" id="hamburgerMenu">
+        <a href="menu.html">Home</a>
+        <a href="history.html">Order History</a>
+        <button type="button" onclick="logoutUser()">Logout</button>
+    </div>
+
+    <div class="container">
+        <div class="selection-box">
+            <h2>Order History</h2>
+            <p class="sub-text">Latest orders appear at the top. Older completed orders are shown below.</p>
+
+            <div id="historyList" class="history-list"></div>
+            <div id="emptyState" class="empty-state" style="display:none;">
+                No orders found for this matric number yet.
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, get, child, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA__9vl0UMRv_hdswgNwpaf9DefqoqbSv8",
+            authDomain: "aeroaid-93195.firebaseapp.com",
+            databaseURL: "https://aeroaid-93195-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "aeroaid-93195",
+            storageBucket: "aeroaid-93195.firebasestorage.app",
+            messagingSenderId: "538007791028",
+            appId: "1:538007791028:web:72844a23d4903bfac77ee1",
+            measurementId: "G-LVSSWZYCM8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Hamburger behaviour
+        window.toggleHamburger = function() {
+            const menu = document.getElementById("hamburgerMenu");
+            const isOpen = menu.style.display === "block";
+            menu.style.display = isOpen ? "none" : "block";
+        }
+
+        window.logoutUser = function() {
+            sessionStorage.clear();
+            window.location.href = "index.html";
+        }
+
+        document.addEventListener("click", (e) => {
+            const menu = document.getElementById("hamburgerMenu");
+            const burger = document.querySelector(".hamburger");
+            if (menu && burger && !menu.contains(e.target) && !burger.contains(e.target)) {
+                menu.style.display = "none";
+            }
+        });
+
+        // Highlight active menu item (Order History on this page)
+        const currentPath = window.location.pathname.split("/").pop() || "history.html";
+        const links = document.querySelectorAll("#hamburgerMenu a");
+        links.forEach(link => {
+            const href = link.getAttribute("href");
+            if (href === currentPath) {
+                link.classList.add("active");
+            }
+        });
+
+        // Load history on page load
+        window.addEventListener("DOMContentLoaded", async () => {
+            const matric = sessionStorage.getItem("userMatric");
+            const historyList = document.getElementById("historyList");
+            const emptyState = document.getElementById("emptyState");
+
+            if (!matric) {
+                emptyState.style.display = "block";
+                emptyState.textContent = "Please log in first to view your order history.";
+                return;
+            }
+
+            try {
+                const dbRef = ref(db);
+                const snapshot = await get(child(dbRef, "orders"));
+                if (!snapshot.exists()) {
+                    emptyState.style.display = "block";
+                    return;
+                }
+
+                const ordersObj = snapshot.val();
+                const ordersArray = Object.entries(ordersObj)
+                    .map(([key, value]) => ({ ...value, orderId: key }))
+                    .filter(o => o.matricNumber === matric)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // newest first
+
+                if (ordersArray.length === 0) {
+                    emptyState.style.display = "block";
+                    return;
+                }
+
+                emptyState.style.display = "none";
+                historyList.innerHTML = "";
+
+                ordersArray.forEach(order => {
+                    const date = new Date(order.timestamp);
+                    const formattedTime = date.toLocaleString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit"
+                    });
+
+                    const status = order.status || "Pending";
+                    const isActive = status.toLowerCase() !== "completed";
+
+                    const card = document.createElement("div");
+                    card.className = `history-card ${isActive ? "clickable" : ""}`;
+                    
+                    // Make card clickable if In Progress
+                    if (isActive) {
+                        card.onclick = function(e) {
+                            // Don't navigate if clicking the Complete button
+                            if (e.target.classList.contains("complete-btn")) return;
+                            // Store order data and navigate
+                            sessionStorage.setItem("orderLocation", order.location);
+                            sessionStorage.setItem("orderItem", order.medicalAid);
+                            sessionStorage.setItem("orderTimestamp", order.timestamp);
+                            sessionStorage.setItem("orderId", order.orderId);
+                            window.location.href = "order.html";
+                        };
+                    }
+                    
+                    card.innerHTML = `
+                        <div class="history-row">
+                            <span class="history-label">Matric Number</span>
+                            <span class="history-value">${order.matricNumber}</span>
+                        </div>
+                        <div class="history-row">
+                            <span class="history-label">Medical Aid</span>
+                            <span class="history-value">${order.medicalAid}</span>
+                        </div>
+                        <div class="history-row">
+                            <span class="history-label">Location</span>
+                            <span class="history-value">${order.location}</span>
+                        </div>
+                        <div class="history-row">
+                            <span class="history-label">Date & Time</span>
+                            <span class="history-value">${formattedTime}</span>
+                        </div>
+                        <span class="status-chip ${isActive ? "status-active" : "status-completed"}">
+                            ${isActive ? "In Progress" : "Completed"}
+                        </span>
+                        <button class="complete-btn" onclick="completeOrder('${order.orderId}', event)" ${!isActive ? "disabled" : ""}>
+                            ${isActive ? "Complete Order" : "Completed"}
+                        </button>
+                    `;
+
+                    historyList.appendChild(card);
+                });
+            } catch (err) {
+                emptyState.style.display = "block";
+                emptyState.textContent = "Failed to load order history.";
+                console.error(err);
+            }
+        });
+
+        // Complete order function
+        window.completeOrder = async function(orderId, event) {
+            event.stopPropagation(); // Prevent card click
+            
+            if (!confirm("Are you sure you want to complete this order?")) {
+                return;
+            }
+
+            try {
+                const orderRef = ref(db, `orders/${orderId}`);
+                await update(orderRef, { status: "Completed" });
+                
+                // Reload the page to show updated status
+                window.location.reload();
+            } catch (error) {
+                alert("Error completing order: " + error.message);
+                console.error(error);
+            }
+        };
+    </script>
+</body>
+</html>
+
+

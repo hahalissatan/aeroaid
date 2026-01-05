@@ -6,7 +6,62 @@
     <title>AeroAid - Order Status</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; }
+        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; position: relative; }
+
+        /* --- Hamburger Menu (same as menu.html) --- */
+        .hamburger {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 26px;
+            height: 22px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .hamburger-line {
+            height: 3px;
+            background: #ffffff;
+            border-radius: 2px;
+        }
+        .hamburger-menu {
+            position: fixed;
+            top: 55px;
+            left: 10px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            width: 180px;
+            display: none;
+            z-index: 300;
+            overflow: hidden;
+        }
+        .hamburger-menu a, .hamburger-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            text-align: left;
+            border: none;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        .hamburger-menu a {
+            text-decoration: none;
+            color: #333;
+        }
+        .hamburger-menu a:hover,
+        .hamburger-menu button:hover {
+            background: #f5f5f5;
+        }
+        .hamburger-menu button {
+            color: #b30000;
+            border-top: 1px solid #eee;
+            font-weight: bold;
+        }
         .container { width: 90%; max-width: 500px; margin-top: 20px; }
         
         /* Order Details Card */
@@ -31,8 +86,21 @@
     </style>
 </head>
 <body>
-    <header>AeroAid</header>
-    
+    <header>
+        <div class="hamburger" onclick="toggleHamburger()">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </div>
+        AeroAid
+    </header>
+
+    <div class="hamburger-menu" id="hamburgerMenu">
+        <a href="menu.html">Home</a>
+        <a href="history.html">Order History</a>
+        <button type="button" onclick="logoutUser()">Logout</button>
+    </div>
+
     <div class="container">
         <div class="status-banner" id="statusText">STATUS: DRONE EN ROUTE</div>
 
@@ -70,7 +138,45 @@
 
     <div class="drone-cam">DRONE POV<br>(LIVE)</div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyA__9vl0UMRv_hdswgNwpaf9DefqoqbSv8",
+            authDomain: "aeroaid-93195.firebaseapp.com",
+            databaseURL: "https://aeroaid-93195-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "aeroaid-93195",
+            storageBucket: "aeroaid-93195.firebasestorage.app",
+            messagingSenderId: "538007791028",
+            appId: "1:538007791028:web:72844a23d4903bfac77ee1",
+            measurementId: "G-LVSSWZYCM8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Hamburger behaviour (same as menu.html)
+        function toggleHamburger() {
+            const menu = document.getElementById("hamburgerMenu");
+            const isOpen = menu.style.display === "block";
+            menu.style.display = isOpen ? "none" : "block";
+        }
+
+        function logoutUser() {
+            sessionStorage.clear();
+            window.location.href = "index.html";
+        }
+
+        document.addEventListener("click", (e) => {
+            const menu = document.getElementById("hamburgerMenu");
+            const burger = document.querySelector(".hamburger");
+            if (menu && burger && !menu.contains(e.target) && !burger.contains(e.target)) {
+                menu.style.display = "none";
+            }
+        });
+
         window.addEventListener('DOMContentLoaded', function() {
             const matric = sessionStorage.getItem('userMatric') || 'Guest';
             const location = sessionStorage.getItem('orderLocation') || 'Unknown';
@@ -99,15 +205,33 @@
                 insBox.innerHTML += "<br><br><strong>AED GUIDE:</strong> Begin chest compressions (CPR) now.";
             } else if(item === 'Tourniquet') {
                 insBox.innerHTML += "<br><br><strong>TOURNIQUET GUIDE:</strong> Apply 2 inches above the wound.";
+            } else if(item === "Inhaler") {
+                insBox.innerHTML += "<br><br><strong>INHALER GUIDE:</strong> Take 2 puffs of the inhaler.";
+            } else if(item === "Epipen") {
+                insBox.innerHTML += "<br><br><strong>EPIPEN GUIDE: Prepare to inject into the outer thigh. Hold the pen firmly for 3 seconds after the click.";
             }
         });
 
-        function finishOrder() {
+        window.finishOrder = async function() {
             if(confirm("Confirm item received? This will end the emergency session.")) {
+                const orderId = sessionStorage.getItem('orderId');
+                
+                // If orderId exists (from history page), update Firebase status
+                if (orderId) {
+                    try {
+                        const orderRef = ref(db, `orders/${orderId}`);
+                        await update(orderRef, { status: "Completed" });
+                    } catch (error) {
+                        console.error("Error updating order status:", error);
+                        alert("Error updating order status. Please try again.");
+                        return;
+                    }
+                }
+                
                 sessionStorage.clear();
                 window.location.href = "index.html";
             }
-        }
+        };
     </script>
 </body>
 </html>

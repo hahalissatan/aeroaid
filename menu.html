@@ -7,11 +7,72 @@
     <style>
         /* --- Standard Layout --- */
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; }
+        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; position: relative; }
+
+        /* --- Hamburger Menu --- */
+        .hamburger {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 26px;
+            height: 22px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .hamburger-line {
+            height: 3px;
+            background: #ffffff;
+            border-radius: 2px;
+        }
+        .hamburger-menu {
+            position: fixed;
+            top: 55px;
+            left: 10px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            width: 180px;
+            display: none;
+            z-index: 300;
+            overflow: hidden;
+        }
+        .hamburger-menu a, .hamburger-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            text-align: left;
+            border: none;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        .hamburger-menu a {
+            text-decoration: none;
+            color: #333;
+        }
+        .hamburger-menu a:hover,
+        .hamburger-menu button:hover {
+            background: #f5f5f5;
+        }
+        .hamburger-menu a.active {
+            background: #ffe6e6;
+            color: #b30000;
+            font-weight: bold;
+        }
+        .hamburger-menu button {
+            color: #333;
+            font-weight: normal;
+            border-top: 1px solid #eee; /* separator line before Logout */
+        }
         .container { width: 90%; max-width: 500px; margin-top: 20px; }
         .selection-box { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .home-box { padding-top: 12px; }
         
-        h2 { font-size: 18px; margin-bottom: 15px; color: #333; }
+        h2 { font-size: 20px; margin-bottom: 15px; color: #333; }
         
         /* Search & Dropdown */
         .search-wrapper { position: relative; width: 100%; margin-bottom: 20px; }
@@ -44,6 +105,12 @@
             background: white; width: 85%; max-width: 350px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); border-top: 8px solid #b30000;
         }
         .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #b30000; }
+        .modal-order-info { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin: 15px 0; text-align: left; }
+        .modal-order-info h3 { font-size: 16px; margin: 0 0 12px 0; color: #333; font-weight: bold; }
+        .modal-order-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e9ecef; }
+        .modal-order-row:last-child { border-bottom: none; }
+        .modal-order-label { font-weight: bold; color: #666; font-size: 14px; }
+        .modal-order-value { color: #333; font-size: 14px; font-weight: 500; }
         .modal-warning { background: #fff3cd; color: #856404; padding: 10px; font-size: 13px; border-radius: 5px; margin: 15px 0; border: 1px solid #ffeeba; }
         .modal-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 20px; }
         .btn-cancel { flex: 1; padding: 10px; border: 1px solid #333; background: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
@@ -51,10 +118,27 @@
     </style>
 </head>
 <body>
-    <header>AeroAid</header>
+    <header>
+        <div class="hamburger" onclick="toggleHamburger()">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </div>
+        AeroAid
+    </header>
+
+    <div class="hamburger-menu" id="hamburgerMenu">
+        <a href="menu.html">Home</a>
+        <a href="history.html">Order History</a>
+        <button type="button" onclick="logoutUser()">Logout</button>
+    </div>
 
     <div class="container">
-        <div class="selection-box">
+        <div class="selection-box home-box">
+            <h2 style="margin-bottom: 8px;">Home</h2>
+            <p style="margin-top: 0; margin-bottom: 18px; font-size: 13px; color: #777;">
+                Choose your medical aid and closest location to request an AeroAid drone.
+            </p>
             <h2>1. Search Location</h2>
             <div class="search-wrapper">
                 <input type="text" id="locSearch" placeholder="Type location (e.g. Perpustakaan)" autocomplete="off">
@@ -87,8 +171,24 @@
 
     <div class="modal-overlay" id="warningModal">
         <div class="modal-box">
-            <div class="modal-title">⚠️ Serious Warning</div>
-            <p style="font-size: 14px; color: #333;">You are about to deploy an emergency drone.</p>
+            <div class="modal-title">⚠️ Confirm Your Order</div>
+            <p style="font-size: 14px; color: #333;">Please review your order details before confirming.</p>
+            
+            <div class="modal-order-info">
+                <h3>Order Details</h3>
+                <div class="modal-order-row">
+                    <span class="modal-order-label">Student ID:</span>
+                    <span class="modal-order-value" id="modalMatric">-</span>
+                </div>
+                <div class="modal-order-row">
+                    <span class="modal-order-label">Location:</span>
+                    <span class="modal-order-value" id="modalLocation">-</span>
+                </div>
+                <div class="modal-order-row">
+                    <span class="modal-order-label">Medical Aid:</span>
+                    <span class="modal-order-value" id="modalItem">-</span>
+                </div>
+            </div>
             
             <div class="modal-warning">
                 <strong>Do not play!</strong><br>
@@ -146,8 +246,47 @@
         }
         function checkForm() { document.getElementById("confirmBtn").disabled = !(searchInput.value && chosenItem); }
 
+        // --- HAMBURGER FUNCTIONS ---
+        window.toggleHamburger = function() {
+            const menu = document.getElementById("hamburgerMenu");
+            const isOpen = menu.style.display === "block";
+            menu.style.display = isOpen ? "none" : "block";
+        }
+
+        window.logoutUser = function() {
+            sessionStorage.clear();
+            window.location.href = "index.html";
+        }
+
+        // Close hamburger when clicking outside
+        document.addEventListener("click", (e) => {
+            const menu = document.getElementById("hamburgerMenu");
+            const burger = document.querySelector(".hamburger");
+            if (menu && burger && !menu.contains(e.target) && !burger.contains(e.target)) {
+                menu.style.display = "none";
+            }
+        });
+
+        // Highlight active menu item (Home on this page)
+        const currentPath = window.location.pathname.split("/").pop() || "menu.html";
+        const links = document.querySelectorAll("#hamburgerMenu a");
+        links.forEach(link => {
+            const href = link.getAttribute("href");
+            if (href === currentPath) {
+                link.classList.add("active");
+            }
+        });
+
         // --- POP UP FUNCTIONS ---
         window.showModal = function() {
+            // Populate order details in the modal
+            const location = searchInput.value;
+            const matric = sessionStorage.getItem("userMatric") || "Anonymous";
+            
+            document.getElementById("modalMatric").textContent = matric;
+            document.getElementById("modalLocation").textContent = location;
+            document.getElementById("modalItem").textContent = chosenItem;
+            
             document.getElementById("warningModal").style.display = "flex";
         }
         window.closeModal = function() {
