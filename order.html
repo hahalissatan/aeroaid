@@ -8,60 +8,15 @@
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; position: relative; }
 
-        /* --- Hamburger Menu (same as menu.html) --- */
-        .hamburger {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 26px;
-            height: 22px;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .hamburger-line {
-            height: 3px;
-            background: #ffffff;
-            border-radius: 2px;
-        }
-        .hamburger-menu {
-            position: fixed;
-            top: 55px;
-            left: 10px;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            width: 180px;
-            display: none;
-            z-index: 300;
-            overflow: hidden;
-        }
-        .hamburger-menu a, .hamburger-menu button {
-            display: block;
-            width: 100%;
-            padding: 10px 14px;
-            text-align: left;
-            border: none;
-            background: white;
-            font-size: 14px;
-            cursor: pointer;
-            box-sizing: border-box;
-        }
-        .hamburger-menu a {
-            text-decoration: none;
-            color: #333;
-        }
-        .hamburger-menu a:hover,
-        .hamburger-menu button:hover {
-            background: #f5f5f5;
-        }
-        .hamburger-menu button {
-            color: #b30000;
-            border-top: 1px solid #eee;
-            font-weight: bold;
-        }
+        /* --- Hamburger Menu --- */
+        .hamburger { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 26px; height: 22px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; }
+        .hamburger-line { height: 3px; background: #ffffff; border-radius: 2px; }
+        .hamburger-menu { position: fixed; top: 55px; left: 10px; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); width: 180px; display: none; z-index: 300; overflow: hidden; }
+        .hamburger-menu a, .hamburger-menu button { display: block; width: 100%; padding: 10px 14px; text-align: left; border: none; background: white; font-size: 14px; cursor: pointer; box-sizing: border-box; }
+        .hamburger-menu a { text-decoration: none; color: #333; }
+        .hamburger-menu a:hover, .hamburger-menu button:hover { background: #f5f5f5; }
+        .hamburger-menu button { color: #b30000; border-top: 1px solid #eee; font-weight: bold; }
+
         .container { width: 90%; max-width: 500px; margin-top: 20px; }
         
         /* Order Details Card */
@@ -79,8 +34,10 @@
         .btn-action { padding: 15px 5px; background: white; border: 2px solid #333; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
         .btn-action:hover { background: #eee; }
 
-        /* INSTRUCTION / VIDEO BOX */
-        .instruction-box { background: #e9ecef; border: 2px dashed #ccc; border-radius: 8px; padding: 20px; text-align: center; color: #555; font-size: 14px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; }
+        /* INSTRUCTION BOX */
+        .instruction-box { background: #e9ecef; border: 2px dashed #ccc; border-radius: 8px; padding: 20px; text-align: left; color: #333; font-size: 14px; min-height: 150px; }
+        .instruction-box h3 { margin-top: 0; color: #b30000; font-size: 16px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        .guide-content p { margin: 10px 0; line-height: 1.4; }
         
         .drone-cam { width: 100px; height: 70px; background: black; color: white; position: fixed; bottom: 20px; right: 20px; border-radius: 5px; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
     </style>
@@ -128,11 +85,15 @@
             <button class="btn-action" style="border-color: #28a745; color: #28a745;" onclick="finishOrder()">ITEM<br>RECEIVED ✅</button>
         </div>
 
-        <div class="instruction-box" id="instructionBox">
-            <strong>How to help while waiting:</strong><br><br>
-            1. Clear a 2m x 2m landing space.<br>
-            2. Stay with the patient.<br>
-            3. Watch for the drone lights.
+        <div class="instruction-box">
+            <h3>1. General Preparation</h3>
+            <div class="guide-content">
+                <p><strong>Step 1: Clear Landing Zone</strong> - Ensure a 2m x 2m flat space is clear of people and debris.</p>
+                <p><strong>Step 2: Stay with Patient</strong> - Keep the victim calm and do not leave them alone.</p>
+                <p><strong>Step 3: Watch for Drone</strong> - Identify the drone LEDs as it approaches for landing.</p>
+            </div>
+            
+            <div id="itemSpecificGuide"></div>
         </div>
     </div>
 
@@ -142,7 +103,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyA__9vl0UMRv_hdswgNwpaf9DefqoqbSv8",
             authDomain: "aeroaid-93195.firebaseapp.com",
@@ -157,18 +117,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Hamburger behaviour (same as menu.html)
         window.toggleHamburger = function() {
             const menu = document.getElementById("hamburgerMenu");
-            // This check is better for identifying if it's currently hidden
-            if (menu.style.display === "block") {
-                menu.style.display = "none";
-            } else {
-                menu.style.display = "block";
-            }
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
         }
 
-        // 2. Fixed Logout behaviour (added window. so the menu button can see it)
         window.logoutUser = function() {
             if(confirm("Are you sure you want to logout?")) {
                 sessionStorage.clear();
@@ -176,7 +129,6 @@
             }
         }
 
-        // 3. Keep the click-outside listener
         document.addEventListener("click", (e) => {
             const menu = document.getElementById("hamburgerMenu");
             const burger = document.querySelector(".hamburger");
@@ -186,57 +138,74 @@
         });
 
         window.addEventListener('DOMContentLoaded', function() {
+            // Get order details
             const matric = sessionStorage.getItem('userMatric') || 'Guest';
             const location = sessionStorage.getItem('orderLocation') || 'Unknown';
             const item = sessionStorage.getItem('orderItem') || 'None';
             const timestamp = sessionStorage.getItem('orderTimestamp') || new Date().toISOString();
             
+            // Display Info
             document.getElementById('orderMatric').textContent = matric;
             document.getElementById('orderLocation').textContent = location;
             document.getElementById('orderItem').textContent = item;
             
-            // Format timestamp for display
             const date = new Date(timestamp);
-            const formattedTime = date.toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            document.getElementById('orderTimestamp').textContent = formattedTime;
+            document.getElementById('orderTimestamp').textContent = date.toLocaleString();
 
-            // Change instructions based on item
-            const insBox = document.getElementById('instructionBox');
-            if(item === 'AED') {
-                insBox.innerHTML += "<br><br><strong>AED GUIDE:</strong> Begin chest compressions (CPR) now.";
-            } else if(item === 'Tourniquet') {
-                insBox.innerHTML += "<br><br><strong>TOURNIQUET GUIDE:</strong> Apply 2 inches above the wound.";
-            } else if(item === "Inhaler") {
-                insBox.innerHTML += "<br><br><strong>INHALER GUIDE:</strong> Take 2 puffs of the inhaler.";
-            } else if(item === "Epipen") {
-                insBox.innerHTML += "<br><br><strong>EPIPEN GUIDE: Prepare to inject into the outer thigh. Hold the pen firmly for 3 seconds after the click.";
+            // --- Dynamic Medical Aid Guide ---
+            const guideBox = document.getElementById('itemSpecificGuide');
+            
+            let guideHTML = `<h3 style="margin-top:20px; border-top:1px solid #ccc; padding-top:15px;">2. ${item} Guide</h3>`;
+            guideHTML += `<div class="guide-content">`;
+
+            if(item === 'Inhaler') {
+                guideHTML += `
+                    <p><strong>Step 1: Proper Position</strong> - Help the patient sit upright. Do not let them lie flat.</p>
+                    <p><strong>Step 2: Shake Device</strong> - Once received, shake the inhaler vigorously for 5 seconds.</p>
+                    <p><strong>Step 3: Administer</strong> - Have patient exhale, then spray 1 puff as they inhale slowly.</p>
+                `;
+                guideHTML += ``;
+            } 
+            else if(item === 'AED') {
+                guideHTML += `
+                    <p><strong>Step 1: Start CPR</strong> - Push hard and fast in the center of the chest immediately.</p>
+                    <p><strong>Step 2: Prep Chest</strong> - Remove clothing from the patient's chest now.</p>
+                    <p><strong>Step 3: Apply Pads</strong> - Follow the voice prompts on the AED device once it lands.</p>
+                `;
+                guideHTML += ``;
             }
+            else if(item === 'Tourniquet') {
+                guideHTML += `
+                    <p><strong>Step 1: Apply Pressure</strong> - Push down hard on the wound with a clean cloth.</p>
+                    <p><strong>Step 2: Position Strap</strong> - Prepare to place the strap 2-3 inches above the wound.</p>
+                    <p><strong>Step 3: Tighten Windlass</strong> - Twist the rod until the bleeding stops completely.</p>
+                `;
+                guideHTML += ``;
+            }
+            else if(item === 'Epipen') {
+                guideHTML += `
+                    <p><strong>Step 1: Prep Thigh</strong> - Check the outer thigh for bulky items in pockets.</p>
+                    <p><strong>Step 2: Injection</strong> - Press the orange tip firmly against the outer thigh until it clicks.</p>
+                    <p><strong>Step 3: Hold</strong> - Keep the pen held firmly in place for 3 full seconds.</p>
+                `;
+                guideHTML += ``;
+            }
+
+            guideHTML += `</div>`;
+            guideBox.innerHTML = guideHTML;
         });
 
         window.finishOrder = async function() {
             if(confirm("Confirm item received? This will end the emergency session.")) {
                 const orderId = sessionStorage.getItem('orderId');
-                
-                // If orderId exists (from history page), update Firebase status
                 if (orderId) {
                     try {
                         const orderRef = ref(db, `orders/${orderId}`);
                         await update(orderRef, { status: "Completed" });
                     } catch (error) {
-                        console.error("Error updating order status:", error);
-                        alert("Error updating order status. Please try again.");
-                        return;
+                        console.error("Error:", error);
                     }
                 }
-                
-                
                 window.location.href = "history.html";
             }
         };
