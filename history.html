@@ -199,10 +199,11 @@
             menu.style.display = isOpen ? "none" : "block";
         }
 
-        window.logoutUser = function() {
-            sessionStorage.clear();
-            window.location.href = "index.html";
-        }
+        window.logoutUser = () => { 
+            if(confirm("Logout?")) { 
+                sessionStorage.clear(); window.location.href = "index.html";
+            } 
+        };
 
         document.addEventListener("click", (e) => {
             const menu = document.getElementById("hamburgerMenu");
