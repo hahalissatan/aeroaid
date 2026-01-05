@@ -3,149 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AeroAid - Order Details</title>
+    <title>AeroAid - Order Status</title>
     <style>
-        /* --- Standard Layout (matching index.html and menu.html) --- */
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            margin: 0; 
-            background: #f0f2f5; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            min-height: 100vh; 
-        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; }
+        .container { width: 90%; max-width: 500px; margin-top: 20px; }
         
-        header { 
-            background: #b30000; 
-            color: white; 
-            width: 100%; 
-            text-align: center; 
-            padding: 15px 0; 
-            font-size: 24px; 
-            font-weight: bold; 
-            position: sticky; 
-            top: 0; 
-            z-index: 100; 
-        }
+        /* Order Details Card */
+        .order-box { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .info-label { font-weight: bold; color: #666; font-size: 14px; }
+        .info-value { font-weight: bold; color: #b30000; }
+
+        /* LIVE STATUS BAR */
+        .status-banner { background: #28a745; color: white; text-align: center; padding: 12px; font-weight: bold; border-radius: 8px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; animation: blink 2s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        /* ACTION BUTTONS */
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .btn-action { padding: 15px 5px; background: white; border: 2px solid #333; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
+        .btn-action:hover { background: #eee; }
+
+        /* INSTRUCTION / VIDEO BOX */
+        .instruction-box { background: #e9ecef; border: 2px dashed #ccc; border-radius: 8px; padding: 20px; text-align: center; color: #555; font-size: 14px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; }
         
-        .container { 
-            width: 90%; 
-            max-width: 500px; 
-            margin-top: 20px; 
-        }
-        
-        .order-box { 
-            background: white; 
-            border-radius: 12px; 
-            padding: 25px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-            margin-bottom: 20px; 
-        }
-        
-        h2 { 
-            font-size: 18px; 
-            margin-bottom: 15px; 
-            color: #333; 
-        }
-        
-        .info-section {
-            margin-bottom: 20px;
-        }
-        
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .info-row:last-child {
-            border-bottom: none;
-        }
-        
-        .info-label {
-            font-weight: bold;
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .info-value {
-            color: #333;
-            font-size: 16px;
-            text-align: right;
-            font-weight: 500;
-        }
-        
-        .status-section {
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 2px solid #eee;
-        }
-        
-        .status-box {
-            background: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            min-height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-            font-size: 14px;
-        }
-        
-        .status-box.empty {
-            color: #bbb;
-            font-style: italic;
-        }
+        .drone-cam { width: 100px; height: 70px; background: black; color: white; position: fixed; bottom: 20px; right: 20px; border-radius: 5px; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
     <header>AeroAid</header>
     
     <div class="container">
+        <div class="status-banner" id="statusText">STATUS: DRONE EN ROUTE</div>
+
         <div class="order-box">
-            <h2>Order Details</h2>
-            
-            <div class="info-section">
-                <div class="info-row">
-                    <span class="info-label">Order Matrix Number:</span>
-                    <span class="info-value" id="orderMatric">-</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Ordered Location:</span>
-                    <span class="info-value" id="orderLocation">-</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Ordered Item:</span>
-                    <span class="info-value" id="orderItem">-</span>
-                </div>
+            <div class="info-row">
+                <span class="info-label">Student ID:</span>
+                <span class="info-value" id="orderMatric">-</span>
             </div>
-            
-            <div class="status-section">
-                <h2>Status</h2>
-                <div class="status-box empty" id="statusBox">
-                    Status will be updated here...
-                </div>
+            <div class="info-row">
+                <span class="info-label">Location:</span>
+                <span class="info-value" id="orderLocation">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Medical Aid:</span>
+                <span class="info-value" id="orderItem">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Order Time:</span>
+                <span class="info-value" id="orderTimestamp">-</span>
             </div>
         </div>
+
+        <div class="action-grid">
+            <button class="btn-action" onclick="alert('Admin notified of problem.')">REPORT<br>PROBLEM</button>
+            <button class="btn-action" style="border-color: #28a745; color: #28a745;" onclick="finishOrder()">ITEM<br>RECEIVED ✅</button>
+        </div>
+
+        <div class="instruction-box" id="instructionBox">
+            <strong>How to help while waiting:</strong><br><br>
+            1. Clear a 2m x 2m landing space.<br>
+            2. Stay with the patient.<br>
+            3. Watch for the drone lights.
+        </div>
     </div>
-    
+
+    <div class="drone-cam">DRONE POV<br>(LIVE)</div>
+
     <script>
-        // Retrieve order data from sessionStorage (set by menu.html)
         window.addEventListener('DOMContentLoaded', function() {
-            const matric = sessionStorage.getItem('userMatric') || 'Not Available';
-            const location = sessionStorage.getItem('orderLocation') || 'Not Available';
-            const item = sessionStorage.getItem('orderItem') || 'Not Available';
+            const matric = sessionStorage.getItem('userMatric') || 'Guest';
+            const location = sessionStorage.getItem('orderLocation') || 'Unknown';
+            const item = sessionStorage.getItem('orderItem') || 'None';
+            const timestamp = sessionStorage.getItem('orderTimestamp') || new Date().toISOString();
             
-            // Display the order information
             document.getElementById('orderMatric').textContent = matric;
             document.getElementById('orderLocation').textContent = location;
             document.getElementById('orderItem').textContent = item;
+            
+            // Format timestamp for display
+            const date = new Date(timestamp);
+            const formattedTime = date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('orderTimestamp').textContent = formattedTime;
+
+            // Change instructions based on item
+            const insBox = document.getElementById('instructionBox');
+            if(item === 'AED') {
+                insBox.innerHTML += "<br><br><strong>AED GUIDE:</strong> Begin chest compressions (CPR) now.";
+            } else if(item === 'Tourniquet') {
+                insBox.innerHTML += "<br><br><strong>TOURNIQUET GUIDE:</strong> Apply 2 inches above the wound.";
+            }
         });
+
+        function finishOrder() {
+            if(confirm("Confirm item received? This will end the emergency session.")) {
+                sessionStorage.clear();
+                window.location.href = "index.html";
+            }
+        }
     </script>
 </body>
 </html>

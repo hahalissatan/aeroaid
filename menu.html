@@ -74,6 +74,10 @@
                     <div class="item-img">EPIPEN</div>
                     <div class="item-info"><span class="item-name">EPIPEN</span><span class="item-desc">Allergic Reactions</span></div>
                 </div>
+                <div class="item-card" onclick="selectItem('Tourniquet', this)">
+                    <div class="item-img">TOURNIQUET</div>
+                    <div class="item-info"><span class="item-name">TOURNIQUET</span><span class="item-desc">Severe Bleeding</span></div>
+                </div>
             </div>
 
             <button class="btn-confirm" id="confirmBtn" onclick="showModal()" disabled>CONFIRM ORDER</button>
@@ -155,15 +159,17 @@
             const matric = sessionStorage.getItem("userMatric") || "Anonymous";
 
             // Save details so the Order page knows what to show
+            const timestamp = new Date().toISOString();
             sessionStorage.setItem("orderLocation", location);
             sessionStorage.setItem("orderItem", chosenItem);
+            sessionStorage.setItem("orderTimestamp", timestamp);
 
             const orderData = {
                 matricNumber: matric,
                 location: location,
                 medicalAid: chosenItem,
                 status: "Pending",
-                timestamp: new Date().toISOString()
+                timestamp: timestamp
             };
 
             try {
