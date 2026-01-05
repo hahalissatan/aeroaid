@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroAid - Selection</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; }
+        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; }
+        
+        .container { width: 90%; max-width: 500px; margin-top: 20px; }
+        .selection-box { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        
+        h2 { font-size: 18px; margin-bottom: 15px; color: #333; }
+        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; margin-bottom: 20px; }
+        
+        .item-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .item-card { display: flex; border: 1px solid #eee; border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.3s; }
+        .item-card:hover { border-color: #b30000; background: #fff8f8; }
+        .item-card.selected { border: 2px solid #b30000; background: #fff0f0; }
+        
+        .item-img { width: 100px; height: 100px; background: #eee; display: flex; justify-content: center; align-items: center; font-size: 12px; }
+        .item-info { padding: 10px; flex: 1; }
+        .item-name { font-weight: bold; font-size: 18px; display: block; }
+        .item-desc { font-size: 13px; color: #666; }
+
+        .btn-confirm { width: 100%; padding: 15px; background: #b30000; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-confirm:disabled { background: #ccc; }
+    </style>
+</head>
+<body>
+    <header>AeroAid</header>
+
+    <div class="container">
+        <div class="selection-box">
+            <h2>1. Select Location</h2>
+            <select id="location">
+                <option value="">-- Choose Location --</option>
+                <option value="Langkasuka">Langkasuka</option>
+                <option value="Dewan Kuliah">Dewan Kuliah</option>
+                <option value="Perpustakaan">Perpustakaan</option>
+            </select>
+
+            <h2>2. Choose Medical Aid</h2>
+            <div class="item-grid">
+                <div class="item-card" onclick="selectItem('AED', this)">
+                    <div class="item-img">AED PIX</div>
+                    <div class="item-info">
+                        <span class="item-name">AED</span>
+                        <span class="item-desc">- For heart attack<br>- Used with CPR</span>
+                    </div>
+                </div>
+                <div class="item-card" onclick="selectItem('Inhaler', this)">
+                    <div class="item-img">INHALER PIX</div>
+                    <div class="item-info">
+                        <span class="item-name">INHALER</span>
+                        <span class="item-desc">- For asthma attack</span>
+                    </div>
+                </div>
+                <div class="item-card" onclick="selectItem('Epipen', this)">
+                    <div class="item-img">EPIPEN PIX</div>
+                    <div class="item-info">
+                        <span class="item-name">EPIPEN</span>
+                        <span class="item-desc">- For allergic reactions</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-confirm" id="confirmBtn" onclick="confirmOrder()" disabled>CONFIRM ORDER</button>
+        </div>
+    </div>
+
+    <script>
+        let chosenItem = "";
+
+        function selectItem(item, element) {
+            chosenItem = item;
+            // Remove 'selected' class from all cards
+            document.querySelectorAll('.item-card').forEach(card => card.classList.remove('selected'));
+            // Add to clicked card
+            element.classList.add('selected');
+            checkForm();
+        }
+
+        function checkForm() {
+            const loc = document.getElementById("location").value;
+            document.getElementById("confirmBtn").disabled = !(loc && chosenItem);
+        }
+
+        document.getElementById("location").onchange = checkForm;
+
+        function confirmOrder() {
+            const location = document.getElementById("location").value;
+            const matric = sessionStorage.getItem("userMatric") || "Unknown";
+            
+            // For now, alert the choice. Next step: Save to Firebase.
+            alert(`Order Confirmed!\nUser: ${matric}\nItem: ${chosenItem}\nTo: ${location}`);
+            // window.location.href = "status.html";
+        }
+    </script>
+</body>
+</html>
