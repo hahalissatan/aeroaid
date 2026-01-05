@@ -3,87 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AeroAid Login</title>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+    <title>AeroAid - Login</title>
+    <style>
+        /* Standardized background and alignment from menu.html */
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        /* Standardized Header from menu.html */
+        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; }
+        
+        /* Standardized Container and Box from menu.html */
+        .container { width: 90%; max-width: 400px; margin-top: 40px; }
+        .selection-box { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
+        
+        h2 { font-size: 18px; margin-bottom: 5px; color: #333; }
+        .sub-text { font-size: 13px; color: #777; margin-bottom: 20px; }
 
-        // TODO: Replace with your actual Firebase config from the Console
+        /* Large input for easy typing on mobile */
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            border: 2px solid #ddd; 
+            border-radius: 8px; 
+            font-size: 22px; 
+            text-align: center; 
+            letter-spacing: 4px; 
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        input:focus { border-color: #b30000; outline: none; }
+
+        /* Shrunk buttons as requested */
+        .btn-group { display: flex; justify-content: center; gap: 10px; }
+        button { 
+            padding: 8px 18px; 
+            border: 1px solid #333; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 13px; 
+            background: white; 
+            transition: 0.2s; 
+        }
+        .btn-confirm { background: #b30000; color: white; border: none; }
+        .btn-confirm:hover { background: #8e0000; }
+        button:hover:not(.btn-confirm) { background: #eee; }
+
+        #status { margin-top: 20px; font-weight: bold; font-size: 14px; min-height: 20px; }
+
+        .disclaimer { font-size: 10px; color: #888; margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+    <header>AeroAid</header>
+
+    <div class="container">
+        <div class="selection-box">
+            <h2>Student Verification</h2>
+            <div class="sub-text">Enter the last 5 digits of your matric number</div>
+            
+            <input type="number" id="matricInput" placeholder="XXXXX" oninput="if(this.value.length > 5) this.value = this.value.slice(0, 5);">
+            
+            <div class="btn-group">
+                <button onclick="document.getElementById('matricInput').value=''; document.getElementById('status').innerText='';">CLEAR</button>
+                <button class="btn-confirm" onclick="validateMatric()">CONFIRM</button>
+            </div>
+            
+            <div id="status"></div>
+            
+            <p class="disclaimer">
+                <strong>Disclaimer:</strong> This system is for emergency use only. Matric numbers are recorded to prevent misuse of AeroAid services.
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyA__9vl0UMRv_hdswgNwpaf9DefqoqbSv8",
+            authDomain: "aeroaid-93195.firebaseapp.com",
+            databaseURL: "https://aeroaid-93195-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "aeroaid-93195",
+            storageBucket: "aeroaid-93195.firebasestorage.app",
+            messagingSenderId: "538007791028",
+            appId: "1:538007791028:web:72844a23d4903bfac77ee1",
+            measurementId: "G-LVSSWZYCM8"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
         window.validateMatric = async function() {
-            const inputDigits = document.getElementById("matricInput").value;
-            const statusMsg = document.getElementById("status");
+            const input = document.getElementById("matricInput").value;
+            const status = document.getElementById("status");
 
-            if (inputDigits.length !== 5) {
-                statusMsg.innerText = "Please enter exactly 5 digits.";
+            if (input.length !== 5) {
+                status.style.color = "orange";
+                status.innerText = "⚠️ Please enter 5 digits.";
                 return;
             }
 
-            const dbRef = ref(db);
+            status.style.color = "#444";
+            status.innerText = "Verifying...";
+
             try {
+                const dbRef = ref(db);
                 const snapshot = await get(child(dbRef, `students`));
+                
                 if (snapshot.exists()) {
                     const students = snapshot.val();
-                    const fullMatrics = Object.keys(students);
-                    
-                    // Check if any full matric number ends with the entered 5 digits
-                    const found = fullMatrics.find(matric => matric.endsWith(inputDigits));
+                    const fullList = Object.keys(students);
+                    const match = fullList.find(matric => matric.endsWith(input));
 
-                    if (found) {
-                        statusMsg.style.color = "green";
-                        statusMsg.innerText = "Login Successful! Redirecting...";
-                        // Save the full matric for later use
-                        sessionStorage.setItem("userMatric", found);
-                        setTimeout(() => window.location.href = "selection.html", 1500);
+                    if (match) {
+                        status.style.color = "green";
+                        status.innerText = "✅ Login Successful! Redirecting...";
+                        sessionStorage.setItem("userMatric", match);
+                        setTimeout(() => { window.location.href = "menu.html"; }, 1000);
                     } else {
-                        statusMsg.style.color = "red";
-                        statusMsg.innerText = "Invalid matric digits. Please try again.";
+                        status.style.color = "red";
+                        status.innerText = "❌ Error: Matric number not found.";
                     }
                 }
             } catch (error) {
+                status.style.color = "red";
+                status.innerText = "❌ Connection failed.";
                 console.error(error);
-                statusMsg.innerText = "Error connecting to database.";
             }
         };
     </script>
-
-    <style>
-        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f4f4; }
-        .login-card { background: white; width: 90%; max-width: 400px; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-top: 5px solid #b30000; text-align: center; }
-        header { background: #b30000; color: white; padding: 10px; font-weight: bold; margin: -20px -20px 20px -20px; border-radius: 3px 3px 0 0; }
-        input { width: 80%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
-        .btn-group { display: flex; justify-content: space-around; }
-        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-confirm { background: white; border: 1px solid black; }
-        .btn-clear { background: white; border: 1px solid black; }
-        #status { margin-top: 15px; font-size: 14px; color: #666; }
-        p.disclaimer { font-size: 11px; color: #555; margin-top: 20px; }
-    </style>
-</head>
-
-<body>
-    <div class="login-card">
-        <header>AeroAid</header>
-        <div style="margin-bottom: 10px; font-size: 18px;">Matric Number (Last 5 Digits):</div>
-        <input type="number" id="matricInput" placeholder="XXXXX" maxlength="5">
-        <div class="btn-group">
-            <button class="btn-clear" onclick="document.getElementById('matricInput').value=''">CLEAR</button>
-            <button class="btn-confirm" onclick="validateMatric()">CONFIRM</button>
-        </div>
-        <div id="status"></div>
-        <p class="disclaimer">*Disclaimer: The matric number entered will be used for further investigation to prevent misuse of the AeroAid service.</p>
-    </div>
 </body>
 </html>

@@ -12,20 +12,31 @@
         .selection-box { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
         
         h2 { font-size: 18px; margin-bottom: 15px; color: #333; }
-        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; margin-bottom: 20px; }
+        
+        /* Searchable Dropdown Styles */
+        .search-wrapper { position: relative; width: 100%; margin-bottom: 20px; }
+        #locSearch { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
+        .loc-dropdown { 
+            position: absolute; width: 100%; max-height: 200px; 
+            background: white; border: 1px solid #ddd; border-top: none; 
+            border-radius: 0 0 8px 8px; overflow-y: auto; display: none; z-index: 1000; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .loc-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #f9f9f9; }
+        .loc-item:hover { background-color: #f0f0f0; color: #b30000; }
         
         .item-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
         .item-card { display: flex; border: 1px solid #eee; border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.3s; }
         .item-card:hover { border-color: #b30000; background: #fff8f8; }
-        .item-card.selected { border: 2px solid #b30000; background: #fff0f0; }
+        .item-card.selected { border: 2.5px solid #b30000; background: #fff0f0; }
         
-        .item-img { width: 100px; height: 100px; background: #eee; display: flex; justify-content: center; align-items: center; font-size: 12px; }
+        .item-img { width: 100px; height: 100px; background: #eee; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; }
         .item-info { padding: 10px; flex: 1; }
         .item-name { font-weight: bold; font-size: 18px; display: block; }
         .item-desc { font-size: 13px; color: #666; }
 
         .btn-confirm { width: 100%; padding: 15px; background: #b30000; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-confirm:disabled { background: #ccc; }
+        .btn-confirm:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -33,32 +44,30 @@
 
     <div class="container">
         <div class="selection-box">
-            <h2>1. Select Location</h2>
-            <select id="location">
-                <option value="">-- Choose Location --</option>
-                <option value="Langkasuka">Langkasuka</option>
-                <option value="Dewan Kuliah">Dewan Kuliah</option>
-                <option value="Perpustakaan">Perpustakaan</option>
-            </select>
+            <h2>1. Search Location</h2>
+            <div class="search-wrapper">
+                <input type="text" id="locSearch" placeholder="Type location (e.g. Perpustakaan)" autocomplete="off">
+                <div id="locList" class="loc-dropdown"></div>
+            </div>
 
             <h2>2. Choose Medical Aid</h2>
             <div class="item-grid">
                 <div class="item-card" onclick="selectItem('AED', this)">
-                    <div class="item-img">AED PIX</div>
+                    <div class="item-img">AED</div>
                     <div class="item-info">
                         <span class="item-name">AED</span>
                         <span class="item-desc">- For heart attack<br>- Used with CPR</span>
                     </div>
                 </div>
                 <div class="item-card" onclick="selectItem('Inhaler', this)">
-                    <div class="item-img">INHALER PIX</div>
+                    <div class="item-img">INHALER</div>
                     <div class="item-info">
                         <span class="item-name">INHALER</span>
                         <span class="item-desc">- For asthma attack</span>
                     </div>
                 </div>
                 <div class="item-card" onclick="selectItem('Epipen', this)">
-                    <div class="item-img">EPIPEN PIX</div>
+                    <div class="item-img">EPIPEN</div>
                     <div class="item-info">
                         <span class="item-name">EPIPEN</span>
                         <span class="item-desc">- For allergic reactions</span>
@@ -70,32 +79,90 @@
         </div>
     </div>
 
-    <script>
-        let chosenItem = "";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
-        function selectItem(item, element) {
+        // IMPORTANT: Copy your config from index.html here
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Locations list sorted alphabetically
+        const locations = ["Langkasuka", "Dewan Kuliah", "Perpustakaan", "Block A1", "Block B2", "Kafeteria"].sort();
+        
+        let chosenItem = "";
+        const searchInput = document.getElementById("locSearch");
+        const dropdown = document.getElementById("locList");
+
+        // --- Search Logic ---
+        function renderList(filter = "") {
+            const filtered = locations.filter(loc => loc.toLowerCase().includes(filter.toLowerCase()));
+            dropdown.innerHTML = filtered.map(loc => `<div class="loc-item" onclick="selectLoc('${loc}')">${loc}</div>`).join('');
+            dropdown.style.display = filtered.length > 0 ? "block" : "none";
+        }
+
+        searchInput.addEventListener("focus", () => renderList(searchInput.value));
+        searchInput.addEventListener("input", (e) => renderList(e.target.value));
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest(".search-wrapper")) dropdown.style.display = "none";
+        });
+
+        // Global function for selecting location
+        window.selectLoc = function(val) {
+            searchInput.value = val;
+            dropdown.style.display = "none";
+            checkForm();
+        }
+
+        // Global function for selecting item
+        window.selectItem = function(item, element) {
             chosenItem = item;
-            // Remove 'selected' class from all cards
             document.querySelectorAll('.item-card').forEach(card => card.classList.remove('selected'));
-            // Add to clicked card
             element.classList.add('selected');
             checkForm();
         }
 
         function checkForm() {
-            const loc = document.getElementById("location").value;
-            document.getElementById("confirmBtn").disabled = !(loc && chosenItem);
+            const confirmBtn = document.getElementById("confirmBtn");
+            confirmBtn.disabled = !(searchInput.value && chosenItem);
         }
 
-        document.getElementById("location").onchange = checkForm;
+        // --- Final Order Submission to Firebase ---
+        window.confirmOrder = async function() {
+            const location = searchInput.value;
+            const matric = sessionStorage.getItem("userMatric") || "Anonymous";
 
-        function confirmOrder() {
-            const location = document.getElementById("location").value;
-            const matric = sessionStorage.getItem("userMatric") || "Unknown";
-            
-            // For now, alert the choice. Next step: Save to Firebase.
-            alert(`Order Confirmed!\nUser: ${matric}\nItem: ${chosenItem}\nTo: ${location}`);
-            // window.location.href = "status.html";
+            const orderData = {
+                matricNumber: matric,
+                location: location,
+                medicalAid: chosenItem,
+                status: "Pending",
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                const ordersRef = ref(db, 'orders');
+                const newOrderRef = push(ordersRef);
+                await set(newOrderRef, orderData);
+                
+                alert(`SUCCESS!\nMatric: ${matric}\nEmergency: ${chosenItem}\nLocation: ${location}\n\nDrone is launching now!`);
+                // window.location.href = "success.html"; // Optional success page
+            } catch (error) {
+                console.error(error);
+                alert("Error submitting order. Check internet connection.");
+            }
         }
     </script>
 </body>
