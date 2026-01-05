@@ -25,7 +25,8 @@
         .item-card { display: flex; border: 1px solid #eee; border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.3s; }
         .item-card:hover { border-color: #b30000; background: #fff8f8; }
         .item-card.selected { border: 2.5px solid #b30000; background: #fff0f0; }
-        .item-img { width: 90px; background: #eee; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; }
+        .item-img { width: 90px; height: 90px; background: #eee; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .item-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .item-info { padding: 10px; flex: 1; }
         .item-name { font-weight: bold; font-size: 18px; display: block; }
         .item-desc { font-size: 13px; color: #666; }
@@ -63,19 +64,19 @@
             <h2>2. Choose Medical Aid</h2>
             <div class="item-grid">
                 <div class="item-card" onclick="selectItem('AED', this)">
-                    <div class="item-img">AED</div>
+                    <div class="item-img"><img src="image/AED.jpg" alt="AED"></div>
                     <div class="item-info"><span class="item-name">AED</span><span class="item-desc">Heart Attack / CPR</span></div>
                 </div>
                 <div class="item-card" onclick="selectItem('Inhaler', this)">
-                    <div class="item-img">INHALER</div>
+                    <div class="item-img"><img src="image/inhaler.jpeg" alt="Inhaler"></div>
                     <div class="item-info"><span class="item-name">INHALER</span><span class="item-desc">Asthma Attack</span></div>
                 </div>
                 <div class="item-card" onclick="selectItem('Epipen', this)">
-                    <div class="item-img">EPIPEN</div>
+                    <div class="item-img"><img src="image/epipen.jpeg" alt="Epipen"></div>
                     <div class="item-info"><span class="item-name">EPIPEN</span><span class="item-desc">Allergic Reactions</span></div>
                 </div>
                 <div class="item-card" onclick="selectItem('Tourniquet', this)">
-                    <div class="item-img">TOURNIQUET</div>
+                    <div class="item-img"><img src="image/cat.jpeg" alt="Tourniquet"></div>
                     <div class="item-info"><span class="item-name">TOURNIQUET</span><span class="item-desc">Severe Bleeding</span></div>
                 </div>
             </div>
