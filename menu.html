@@ -177,7 +177,7 @@
             <div class="modal-order-info">
                 <h3>Order Details</h3>
                 <div class="modal-order-row">
-                    <span class="modal-order-label">Student ID:</span>
+                    <span class="modal-order-label">Matric Number:</span>
                     <span class="modal-order-value" id="modalMatric">-</span>
                 </div>
                 <div class="modal-order-row">
@@ -249,21 +249,34 @@
         // --- HAMBURGER FUNCTIONS ---
         window.toggleHamburger = function() {
             const menu = document.getElementById("hamburgerMenu");
-            const isOpen = menu.style.display === "block";
-            menu.style.display = isOpen ? "none" : "block";
+            
+            // Check computed style to handle the initial empty string state
+            const currentDisplay = window.getComputedStyle(menu).display;
+
+            if (currentDisplay === "none") {
+                menu.style.display = "block";
+            } else {
+                menu.style.display = "none";
+            }
         }
 
         window.logoutUser = function() {
-            sessionStorage.clear();
-            window.location.href = "index.html";
+            if(confirm("Are you sure you want to logout?")) {
+                sessionStorage.clear();
+                window.location.href = "index.html";
+            }
         }
 
-        // Close hamburger when clicking outside
+        // Close hamburger when clicking outside (Fixed for order.html)
         document.addEventListener("click", (e) => {
             const menu = document.getElementById("hamburgerMenu");
             const burger = document.querySelector(".hamburger");
-            if (menu && burger && !menu.contains(e.target) && !burger.contains(e.target)) {
-                menu.style.display = "none";
+            
+            // Check if menu exists and if the click was outside both menu and burger
+            if (menu && burger && menu.style.display === "block") {
+                if (!menu.contains(e.target) && !burger.contains(e.target)) {
+                    menu.style.display = "none";
+                }
             }
         });
 

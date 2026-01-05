@@ -106,7 +106,7 @@
 
         <div class="order-box">
             <div class="info-row">
-                <span class="info-label">Student ID:</span>
+                <span class="info-label">Matric Number:</span>
                 <span class="info-value" id="orderMatric">-</span>
             </div>
             <div class="info-row">
@@ -158,17 +158,25 @@
         const db = getDatabase(app);
 
         // Hamburger behaviour (same as menu.html)
-        function toggleHamburger() {
+        window.toggleHamburger = function() {
             const menu = document.getElementById("hamburgerMenu");
-            const isOpen = menu.style.display === "block";
-            menu.style.display = isOpen ? "none" : "block";
+            // This check is better for identifying if it's currently hidden
+            if (menu.style.display === "block") {
+                menu.style.display = "none";
+            } else {
+                menu.style.display = "block";
+            }
         }
 
-        function logoutUser() {
-            sessionStorage.clear();
-            window.location.href = "index.html";
+        // 2. Fixed Logout behaviour (added window. so the menu button can see it)
+        window.logoutUser = function() {
+            if(confirm("Are you sure you want to logout?")) {
+                sessionStorage.clear();
+                window.location.href = "index.html";
+            }
         }
 
+        // 3. Keep the click-outside listener
         document.addEventListener("click", (e) => {
             const menu = document.getElementById("hamburgerMenu");
             const burger = document.querySelector(".hamburger");
@@ -228,8 +236,8 @@
                     }
                 }
                 
-                sessionStorage.clear();
-                window.location.href = "index.html";
+                
+                window.location.href = "history.html";
             }
         };
     </script>
