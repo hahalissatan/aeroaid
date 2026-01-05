@@ -68,6 +68,12 @@
             <div class="info-row"><span class="info-label">Location:</span><span class="info-value" id="orderLocation">-</span></div>
             <div class="info-row"><span class="info-label">Medical Aid:</span><span class="info-value" id="orderItem">-</span></div>
             <div class="info-row"><span class="info-label">Order Time:</span><span class="info-value" id="orderTimestamp">-</span></div>
+            <div class="info-row" style="border-bottom: none; border-top: 1px solid #eee; margin-top: 5px;">
+                <span class="info-label">HEP Emergency:</span>
+                <span class="info-value">
+                    <a href="tel:+60123456789" style="text-decoration: none; color: #b30000;">+60 12-345 6789</a>
+                </span>
+            </div>
         </div>
 
         <div class="action-grid">
@@ -77,9 +83,14 @@
 
         <div class="instruction-box">
             <h3>1. General Preparation</h3>
-            <p><strong>Step 1: Clear Landing Zone</strong> - Ensure 2m x 2m flat space is clear.</p>
+            <p><strong>Step 1: Clear Landing Zone</strong> - Ensure a 2m x 2m flat space is clear.</p>
             <p><strong>Step 2: Stay with Patient</strong> - Do not leave the victim alone.</p>
-            <p><strong>Step 3: Watch for Drone</strong> - Watch for landing LEDs.</p>
+            <p><strong>Step 3: Spot the Drone</strong> - Look for the <strong>flashing Green LED</strong> in the sky.</p>
+        
+            <h3 style="margin-top:20px; border-top:1px solid #ccc; padding-top:15px;">2. Landing Safety</h3>
+            <p><strong>Step 1: Stand Back</strong> - The drone will land automatically. Keep 1 meter clear.</p>
+            <p><strong>Step 2: Wait for Red LED</strong> - When the LED turns <strong>Solid Red</strong> and the propellers stop, it is safe to touch.</p>
+            <p><strong>Step 3: Unstrap Kit</strong> - Carefully remove the medical aid from the landing legs.</p>
             
             <div id="itemSpecificGuide"></div>
         </div>
@@ -103,9 +114,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, update, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        // Firebase Config
+        import { getDatabase, ref, update, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    
+        // Firebase config (Ensure this matches your actual config)
         const firebaseConfig = {
             apiKey: "AIzaSyA__9vl0UMRv_hdswgNwpaf9DefqoqbSv8",
             authDomain: "aeroaid-93195.firebaseapp.com",
@@ -115,95 +126,120 @@
             messagingSenderId: "538007791028",
             appId: "1:538007791028:web:72844a23d4903bfac77ee1"
         };
+    
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
-        window.toggleHamburger = () => {
+    
+        // --- NAVIGATION & LOGOUT ---
+        window.toggleHamburger = function() {
             const menu = document.getElementById("hamburgerMenu");
-            menu.style.display = menu.style.display === "block" ? "none" : "block";
+            menu.style.display = (menu.style.display === "block") ? "none" : "block";
         };
-
-        window.logoutUser = () => { if(confirm("Logout?")) { sessionStorage.clear(); window.location.href = "index.html"; } };
-
+    
+        window.logoutUser = function() {
+            if(confirm("Are you sure you want to logout?")) {
+                sessionStorage.clear();
+                window.location.href = "index.html";
+            }
+        };
+    
+        // --- TELEGRAM REPORTING ---
         window.toggleReportModal = () => document.getElementById("reportModal").style.display = "flex";
         window.closeReportModal = () => document.getElementById("reportModal").style.display = "none";
         window.updateCount = () => {
             const val = document.getElementById("problemText").value;
             document.getElementById("countLabel").innerText = val.length + " / 200";
         };
-
+    
         window.submitProblem = async function() {
             const problem = document.getElementById("problemText").value;
+            const orderId = sessionStorage.getItem('orderId') || "N/A";
             const matric = sessionStorage.getItem('userMatric') || "Guest";
             const location = sessionStorage.getItem('orderLocation') || "Unknown";
             const item = sessionStorage.getItem('orderItem') || "None";
-            const orderId = sessionStorage.getItem('orderId') || "N/A";
 
-            // Telegram Credentials
-            const botToken = "8517724850:AAFC_PCkqoNr6_cuMPmwWhq-2wlUG75yn38";
-            const chatId = "8098899520";
-
-            if (problem.length < 5) return alert("Please describe the issue in more detail.");
-
-            // Format the message for HEP
-            const msg = `🚨 *AeroAid Problem Report* 🚨\n\n` +
-                        `👤 *Student:* ${matric}\n` +
-                        `📍 *Location:* ${location}\n` +
-                        `📦 *Medical Aid:* ${item}\n` +
-                        `⚠️ *Issue:* ${problem}\n\n` +
-                        `🆔 _Order Ref: ${orderId}_`;
-
-            const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(msg)}&parse_mode=Markdown`;
+            if (problem.trim().length < 5) {
+                alert("Please provide more details.");
+                return;
+            }
 
             try {
-                const response = await fetch(url);
-                if (response.ok) {
-                    alert("Reported to HEP via Telegram successfully.");
-                    closeReportModal();
-                } else {
-                    throw new Error("Failed to connect to Telegram.");
-                }
-            } catch (e) { 
-                alert("Error sending report. Please check your connection."); 
-            }
-        };
+                const botToken = "8517724850:AAFC_PCkqoNr6_cuMPmwWhq-2wlUG75yn38";
+                const chatId = "8098899520"; 
+                
+                // Exact formatting as requested
+                const telegramMsg = `🚨 *AeroAid Problem Report* 🚨\n\n` +
+                                    `👤 *Student:* ${matric}\n` +
+                                    `📍 *Location:* ${location}\n` +
+                                    `📦 *Medical Aid:* ${item}\n` +
+                                    `⚠️ *Issue:* ${problem}\n\n` +
+                                    `🆔 *Order Ref:* ${orderId}`;
 
-        window.addEventListener('DOMContentLoaded', () => {
+                const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(telegramMsg)}&parse_mode=Markdown`;
+
+                await fetch(url);
+                alert("Report sent to HEP successfully.");
+                closeReportModal();
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+    
+        // --- DYNAMIC CONTENT LOADING ---
+        window.addEventListener('DOMContentLoaded', function() {
             const item = sessionStorage.getItem('orderItem') || 'None';
-            document.getElementById('orderMatric').textContent = sessionStorage.getItem('userMatric');
-            document.getElementById('orderLocation').textContent = sessionStorage.getItem('orderLocation');
+            document.getElementById('orderMatric').textContent = sessionStorage.getItem('userMatric') || 'Guest';
+            document.getElementById('orderLocation').textContent = sessionStorage.getItem('orderLocation') || 'Unknown';
             document.getElementById('orderItem').textContent = item;
             document.getElementById('orderTimestamp').textContent = new Date().toLocaleString();
-
+    
             const guideBox = document.getElementById('itemSpecificGuide');
             let guideHTML = `<h3 style="margin-top:20px; border-top:1px solid #ccc; padding-top:15px;">2. ${item} Guide</h3>`;
-
+            guideHTML += `<div class="guide-content">`;
+    
             if(item === 'Inhaler') {
-                guideHTML += `<p><strong>Step 1: Position</strong> - Help patient sit upright.</p>
-                              <p><strong>Step 2: Shake</strong> - Shake inhaler vigorously for 5 seconds.</p>
-                              <p><strong>Step 3: Spray</strong> - 1 puff as they inhale slowly.</p>`;
-                guideHTML += ``;
-            } else if(item === 'AED') {
-                guideHTML += `<p><strong>Step 1: CPR</strong> - Start chest compressions immediately.</p>
-                              <p><strong>Step 2: Prep</strong> - Remove clothing from chest now.</p>
-                              <p><strong>Step 3: Pads</strong> - Follow AED voice prompts on arrival.</p>`;
-                guideHTML += ``;
-            } else if(item === 'Tourniquet') {
-                guideHTML += `<p><strong>Step 1: Pressure</strong> - Apply firm direct pressure.</p>
-                              <p><strong>Step 2: Spot</strong> - Identify spot 2-3 inches above wound.</p>
-                              <p><strong>Step 3: Tighten</strong> - Twist rod until bleeding stops.</p>`;
-                guideHTML += ``;
-            } else if(item === 'Epipen') {
-                guideHTML += `<p><strong>Step 1: Prep</strong> - Check outer thigh for items in pockets.</p>
-                              <p><strong>Step 2: Inject</strong> - Press orange tip firmly to outer thigh.</p>
-                              <p><strong>Step 3: Hold</strong> - Hold firmly for 3 seconds.</p>`;
-                guideHTML += ``;
+                guideHTML += `
+                    <p><strong>Step 1: Proper Position</strong> - Help the patient sit upright. Do not let them lie flat.</p>
+                    <p><strong>Step 2: Shake Device</strong> - Once received, shake the inhaler vigorously for 5 seconds.</p>
+                    <p><strong>Step 3: Administer</strong> - Have patient exhale, then spray 1 puff as they inhale slowly.</p>
+                    <p>📺 <a href="https://www.youtube.com/watch?v=Lx_e5nXfi5w" target="_blank">Watch Inhaler Tutorial</a></p>
+                    
+                `;
+            } 
+            else if(item === 'AED') {
+                guideHTML += `
+                    <p><strong>Step 1: Start CPR</strong> - Push hard and fast in the center of the chest immediately.</p>
+                    <p><strong>Step 2: Prep Chest</strong> - Remove clothing from the patient's chest now.</p>
+                    <p><strong>Step 3: Apply Pads</strong> - Follow the voice prompts on the AED device once it lands.</p>
+                    <p>📺 <a href="https://www.youtube.com/watch?v=ckUvaQ-z4xA" target="_blank">Watch AED Tutorial</a></p>
+                    
+                `;
             }
+            else if(item === 'Tourniquet') {
+                guideHTML += `
+                    <p><strong>Step 1: Apply Pressure</strong> - Push down hard on the wound with a clean cloth.</p>
+                    <p><strong>Step 2: Position Strap</strong> - Prepare to place the strap 2-3 inches above the wound.</p>
+                    <p><strong>Step 3: Tighten Windlass</strong> - Twist the rod until the bleeding stops completely.</p>
+                    <p>📺 <a href="https://www.youtube.com/watch?v=LDN03FgUhxU" target="_blank">Watch Tourniquet Tutorial</a></p>
+                    
+                `;
+            }
+            else if(item === 'Epipen') {
+                guideHTML += `
+                    <p><strong>Step 1: Prep Thigh</strong> - Check the outer thigh for bulky items in pockets.</p>
+                    <p><strong>Step 2: Injection</strong> - Press the orange tip firmly against the outer thigh until it clicks.</p>
+                    <p><strong>Step 3: Hold</strong> - Keep the pen held firmly in place for 3 full seconds.</p>
+                    <p>📺 <a href="https://www.youtube.com/watch?v=L501Sb7y5Kk" target="_blank">Watch EpiPen Tutorial</a></p>
+                    
+                `;
+            }
+    
+            guideHTML += `</div>`;
             guideBox.innerHTML = guideHTML;
         });
-
+    
         window.finishOrder = async function() {
-            if(confirm("Received?")) {
+            if(confirm("Confirm item received? This ends the session.")) {
                 const id = sessionStorage.getItem('orderId');
                 if (id) await update(ref(db, `orders/${id}`), { status: "Completed" });
                 window.location.href = "history.html";
