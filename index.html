@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroAid Login</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+        // TODO: Replace with your actual Firebase config from the Console
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.validateMatric = async function() {
+            const inputDigits = document.getElementById("matricInput").value;
+            const statusMsg = document.getElementById("status");
+
+            if (inputDigits.length !== 5) {
+                statusMsg.innerText = "Please enter exactly 5 digits.";
+                return;
+            }
+
+            const dbRef = ref(db);
+            try {
+                const snapshot = await get(child(dbRef, `students`));
+                if (snapshot.exists()) {
+                    const students = snapshot.val();
+                    const fullMatrics = Object.keys(students);
+                    
+                    // Check if any full matric number ends with the entered 5 digits
+                    const found = fullMatrics.find(matric => matric.endsWith(inputDigits));
+
+                    if (found) {
+                        statusMsg.style.color = "green";
+                        statusMsg.innerText = "Login Successful! Redirecting...";
+                        // Save the full matric for later use
+                        sessionStorage.setItem("userMatric", found);
+                        setTimeout(() => window.location.href = "selection.html", 1500);
+                    } else {
+                        statusMsg.style.color = "red";
+                        statusMsg.innerText = "Invalid matric digits. Please try again.";
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                statusMsg.innerText = "Error connecting to database.";
+            }
+        };
+    </script>
+
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f4f4; }
+        .login-card { background: white; width: 90%; max-width: 400px; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-top: 5px solid #b30000; text-align: center; }
+        header { background: #b30000; color: white; padding: 10px; font-weight: bold; margin: -20px -20px 20px -20px; border-radius: 3px 3px 0 0; }
+        input { width: 80%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        .btn-group { display: flex; justify-content: space-around; }
+        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-confirm { background: white; border: 1px solid black; }
+        .btn-clear { background: white; border: 1px solid black; }
+        #status { margin-top: 15px; font-size: 14px; color: #666; }
+        p.disclaimer { font-size: 11px; color: #555; margin-top: 20px; }
+    </style>
+</head>
+
+<body>
+    <div class="login-card">
+        <header>AeroAid</header>
+        <div style="margin-bottom: 10px; font-size: 18px;">Matric Number (Last 5 Digits):</div>
+        <input type="number" id="matricInput" placeholder="XXXXX" maxlength="5">
+        <div class="btn-group">
+            <button class="btn-clear" onclick="document.getElementById('matricInput').value=''">CLEAR</button>
+            <button class="btn-confirm" onclick="validateMatric()">CONFIRM</button>
+        </div>
+        <div id="status"></div>
+        <p class="disclaimer">*Disclaimer: The matric number entered will be used for further investigation to prevent misuse of the AeroAid service.</p>
+    </div>
+</body>
+</html>
