@@ -308,34 +308,36 @@
 
         // --- FINAL SUBMISSION ---
         window.submitFinalOrder = async function() {
-            const location = searchInput.value;
-            const matric = sessionStorage.getItem("userMatric") || "Anonymous";
+    const location = searchInput.value;
+    const matric = sessionStorage.getItem("userMatric") || "Anonymous";
+    const timestamp = new Date().toISOString();
 
-            // Save details so the Order page knows what to show
-            const timestamp = new Date().toISOString();
+        const orderData = {
+            matricNumber: matric,
+            location: location,
+            medicalAid: chosenItem,
+            status: "Pending", // This is the status your drone/admin sees
+            timestamp: timestamp
+        };
+
+        try {
+            const ordersRef = ref(db, 'orders');
+            const newOrderRef = push(ordersRef); // Create the reference first
+            const orderId = newOrderRef.key;     // GET THE UNIQUE ID HERE
+
+            await set(newOrderRef, orderData);
+            
+            // SAVE THE ID SO ORDER.HTML CAN USE IT
+            sessionStorage.setItem("orderId", orderId);
             sessionStorage.setItem("orderLocation", location);
             sessionStorage.setItem("orderItem", chosenItem);
             sessionStorage.setItem("orderTimestamp", timestamp);
 
-            const orderData = {
-                matricNumber: matric,
-                location: location,
-                medicalAid: chosenItem,
-                status: "Pending",
-                timestamp: timestamp
-            };
-
-            try {
-                const ordersRef = ref(db, 'orders');
-                const newOrderRef = push(ordersRef);
-                await set(newOrderRef, orderData);
-                
-                // Redirect to the new Order page
-                window.location.href = "order.html"; 
-            } catch (error) {
-                alert("Error: " + error.message);
-            }
+            window.location.href = "order.html"; 
+        } catch (error) {
+            alert("Error: " + error.message);
         }
+    }
     </script>
 </body>
 </html>
