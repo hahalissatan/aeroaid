@@ -1,15 +1,151 @@
-<html>
-    Order Page
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroAid - Order Details</title>
+    <style>
+        /* --- Standard Layout (matching index.html and menu.html) --- */
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            background: #f0f2f5; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+        }
+        
+        header { 
+            background: #b30000; 
+            color: white; 
+            width: 100%; 
+            text-align: center; 
+            padding: 15px 0; 
+            font-size: 24px; 
+            font-weight: bold; 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+        }
+        
+        .container { 
+            width: 90%; 
+            max-width: 500px; 
+            margin-top: 20px; 
+        }
+        
+        .order-box { 
+            background: white; 
+            border-radius: 12px; 
+            padding: 25px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            margin-bottom: 20px; 
+        }
+        
+        h2 { 
+            font-size: 18px; 
+            margin-bottom: 15px; 
+            color: #333; 
+        }
+        
+        .info-section {
+            margin-bottom: 20px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .info-value {
+            color: #333;
+            font-size: 16px;
+            text-align: right;
+            font-weight: 500;
+        }
+        
+        .status-section {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+        
+        .status-box {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .status-box.empty {
+            color: #bbb;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
     <header>AeroAid</header>
+    
     <div class="container">
         <div class="order-box">
             <h2>Order Details</h2>
-            <p>Location: <span id="orderLocation"></span></p>
-            <p>Medical Aid: <span id="orderItem"></span></p>
+            
+            <div class="info-section">
+                <div class="info-row">
+                    <span class="info-label">Order Matrix Number:</span>
+                    <span class="info-value" id="orderMatric">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Ordered Location:</span>
+                    <span class="info-value" id="orderLocation">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Ordered Item:</span>
+                    <span class="info-value" id="orderItem">-</span>
+                </div>
+            </div>
+            
+            <div class="status-section">
+                <h2>Status</h2>
+                <div class="status-box empty" id="statusBox">
+                    Status will be updated here...
+                </div>
+            </div>
         </div>
     </div>
+    
     <script>
-        const orderLocation = sessionStorage.getItem("orderLocation");
-        const orderItem = sessionStorage.getItem("orderItem");
+        // Retrieve order data from sessionStorage (set by menu.html)
+        window.addEventListener('DOMContentLoaded', function() {
+            const matric = sessionStorage.getItem('userMatric') || 'Not Available';
+            const location = sessionStorage.getItem('orderLocation') || 'Not Available';
+            const item = sessionStorage.getItem('orderItem') || 'Not Available';
+            
+            // Display the order information
+            document.getElementById('orderMatric').textContent = matric;
+            document.getElementById('orderLocation').textContent = location;
+            document.getElementById('orderItem').textContent = item;
+        });
     </script>
+</body>
 </html>
