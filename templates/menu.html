@@ -55,7 +55,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
             width: 180px;
             display: none;
-            z-index: 300;
+            z-index: 2000;
             overflow: hidden;
         }
         .hamburger-menu a, .hamburger-menu button {
@@ -177,8 +177,8 @@
     </header>
 
     <div class="hamburger-menu" id="hamburgerMenu">
-        <a href="menu.html">Home</a>
-        <a href="history.html">Order History</a>
+        <a href="/menu">Home</a>
+        <a href="/history">Order History</a>
         <button type="button" onclick="logoutUser()">Logout</button>
     </div>
 
@@ -197,20 +197,40 @@
             <h2>2. Choose Medical Aid</h2>
             <div class="item-grid">
                 <div class="item-card" onclick="selectItem('AED', this)">
-                    <div class="item-img"><img src="image/AED.jpg" alt="AED"></div>
-                    <div class="item-info"><span class="item-name">AED</span><span class="item-desc">Heart Attack / CPR</span></div>
+                    <div class="item-img">
+                        <img src="{{ url_for('static', filename='image/AED.jpg') }}" alt="AED">
+                    </div>
+                    <div class="item-info">
+                        <span class="item-name">AED</span>
+                        <span class="item-desc">Heart Attack / CPR</span>
+                    </div>
                 </div>
                 <div class="item-card" onclick="selectItem('Inhaler', this)">
-                    <div class="item-img"><img src="image/inhaler.jpeg" alt="Inhaler"></div>
-                    <div class="item-info"><span class="item-name">INHALER</span><span class="item-desc">Asthma Attack</span></div>
+                    <div class="item-img">
+                        <img src="{{ url_for('static', filename='image/inhaler.jpeg') }}" alt="Inhaler">
+                    </div>
+                    <div class="item-info">
+                        <span class="item-name">INHALER</span>
+                        <span class="item-desc">Asthma Attack</span>
+                    </div>
                 </div>
                 <div class="item-card" onclick="selectItem('Epipen', this)">
-                    <div class="item-img"><img src="image/epipen.jpeg" alt="Epipen"></div>
-                    <div class="item-info"><span class="item-name">EPIPEN</span><span class="item-desc">Allergic Reactions</span></div>
+                    <div class="item-img">
+                        <img src="{{ url_for('static', filename='image/epipen.jpeg') }}" alt="Epipen">
+                    </div>
+                    <div class="item-info">
+                        <span class="item-name">EPIPEN</span>
+                        <span class="item-desc">Allergic Reactions</span>
+                    </div>
                 </div>
                 <div class="item-card" onclick="selectItem('Tourniquet', this)">
-                    <div class="item-img"><img src="image/cat.jpeg" alt="Tourniquet"></div>
-                    <div class="item-info"><span class="item-name">TOURNIQUET & BANDAGE</span><span class="item-desc">Severe Bleeding</span></div>
+                    <div class="item-img">
+                        <img src="{{ url_for('static', filename='image/cat.jpeg') }}" alt="Tourniquet">
+                    </div>
+                    <div class="item-info">
+                        <span class="item-name">TOURNIQUET & BANDAGE</span>
+                        <span class="item-desc">Severe Bleeding</span>
+                    </div>
                 </div>
             </div>
 
@@ -314,10 +334,68 @@
             }
         }
 
+        window.submitFinalOrder = async function() {
+            const location = searchInput.value;
+            const matric = sessionStorage.getItem("userMatric") || "Anonymous";
+            const timestamp = new Date().toISOString();
+
+            const orderData = {
+                matricNumber: matric,
+                location: location,
+                medicalAid: chosenItem,
+                status: "Pending",
+                timestamp: timestamp
+            };
+
+            try {
+                // 1. Save to Firebase
+                const ordersRef = ref(db, 'orders');
+                const newOrderRef = push(ordersRef);
+                const orderId = newOrderRef.key;
+                await set(newOrderRef, orderData);
+                
+                // 2. Save to Session for the next page
+                sessionStorage.setItem("orderId", orderId);
+                sessionStorage.setItem("orderLocation", location);
+                sessionStorage.setItem("orderItem", chosenItem);
+                sessionStorage.setItem("orderTimestamp", timestamp);
+
+                // 3. TELEGRAM MESSAGE (Directly from phone)
+                const botToken = "8517724850:AAFC_PCkqoNr6_cuMPmwWhq-2wlUG75yn38";
+                const chatId = "8098899520"; 
+                
+                const telegramMsg = `🚨 *NEW EMERGENCY DISPATCH* 🚨\n\n` +
+                                    `👤 *Student:* ${matric}\n` +
+                                    `📍 *Location:* ${location}\n` +
+                                    `📦 *Medical Aid:* ${chosenItem}\n\n` +
+                                    `🚁 Drone is launching now!\n` +
+                                    `🆔 *Ref:* ${orderId}`;
+
+                const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(telegramMsg)}&parse_mode=Markdown`;
+
+                // We use fetch to send the telegram message
+                await fetch(telegramUrl);
+                alert("✅ EMERGENCY DISPATCHED!\n\nA message has been sent to HEP. Please stay at " + location + " and look for the AeroAid drone.");
+
+                // 4. Trigger DroneBlocks (This goes to your app.py)
+                fetch('/dispatch', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ item: chosenItem, location: location })
+                });
+
+                // 5. Move to status page
+                window.location.href = "/order"; 
+
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+
         window.logoutUser = function() {
             if(confirm("Are you sure you want to logout?")) {
                 sessionStorage.clear();
-                window.location.href = "index.html";
+                window.location.href = "/";
             }
         }
 
@@ -360,38 +438,7 @@
             document.getElementById("warningModal").style.display = "none";
         }
 
-        // --- FINAL SUBMISSION ---
-        window.submitFinalOrder = async function() {
-            const location = searchInput.value;
-            const matric = sessionStorage.getItem("userMatric") || "Anonymous";
-            const timestamp = new Date().toISOString();
 
-            const orderData = {
-                matricNumber: matric,
-                location: location,
-                medicalAid: chosenItem,
-                status: "Pending", // This is the status your drone/admin sees
-                timestamp: timestamp
-            };
-
-            try {
-                const ordersRef = ref(db, 'orders');
-                const newOrderRef = push(ordersRef); // Create the reference first
-                const orderId = newOrderRef.key;     // GET THE UNIQUE ID HERE
-
-                await set(newOrderRef, orderData);
-                
-                // SAVE THE ID SO ORDER.HTML CAN USE IT
-                sessionStorage.setItem("orderId", orderId);
-                sessionStorage.setItem("orderLocation", location);
-                sessionStorage.setItem("orderItem", chosenItem);
-                sessionStorage.setItem("orderTimestamp", timestamp);
-
-                window.location.href = "order.html"; 
-            } catch (error) {
-                alert("Error: " + error.message);
-            }
-        }
     </script>
 </body>
 </html>

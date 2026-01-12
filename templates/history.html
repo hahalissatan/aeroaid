@@ -6,8 +6,8 @@
     <title>AeroAid - Order History</title>
     <style>
         /* Standard layout (same as other pages) */
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; position: relative; }
+        body { font-family: 'Segoe UI', sans-serif; padding-top: 50px; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 1000; position: fixed; }
         .container { width: 90%; max-width: 500px; margin-top: 20px; }
 
         /* Hamburger (shared) */
@@ -33,7 +33,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
             width: 180px;
             display: none;
-            z-index: 300;
+            z-index: 2000;
             overflow: hidden;
         }
         .hamburger-menu a,
@@ -157,8 +157,8 @@
     </header>
 
     <div class="hamburger-menu" id="hamburgerMenu">
-        <a href="menu.html">Home</a>
-        <a href="history.html">Order History</a>
+        <a href="/menu">Home</a>
+        <a href="/history">Order History</a>
         <button type="button" onclick="logoutUser()">Logout</button>
     </div>
 
@@ -201,7 +201,7 @@
 
         window.logoutUser = () => { 
             if(confirm("Logout?")) { 
-                sessionStorage.clear(); window.location.href = "index.html";
+                sessionStorage.clear(); window.location.href = "/";
             } 
         };
 
@@ -214,7 +214,7 @@
         });
 
         // Highlight active menu item (Order History on this page)
-        const currentPath = window.location.pathname.split("/").pop() || "history.html";
+        const currentPath = window.location.pathname.split("/").pop() || "/history";
         const links = document.querySelectorAll("#hamburgerMenu a");
         links.forEach(link => {
             const href = link.getAttribute("href");
@@ -284,7 +284,7 @@
                             sessionStorage.setItem("orderItem", order.medicalAid);
                             sessionStorage.setItem("orderTimestamp", order.timestamp);
                             sessionStorage.setItem("orderId", order.orderId);
-                            window.location.href = "order.html";
+                            window.location.href = "/order";
                         };
                     }
                     

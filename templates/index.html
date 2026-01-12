@@ -121,7 +121,7 @@
                         status.style.color = "green";
                         status.innerText = "✅ Login Successful! Redirecting...";
                         sessionStorage.setItem("userMatric", match);
-                        setTimeout(() => { window.location.href = "menu.html"; }, 1000);
+                        setTimeout(() => { window.location.href = "/menu"; }, 1000);
                     } else {
                         status.style.color = "red";
                         status.innerText = "❌ Error: Matric number not found.";

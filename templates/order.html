@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AeroAid - Order Status</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 100; position: relative; }
+        body { font-family: 'Segoe UI', sans-serif; padding-top: 60px; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        header { background: #b30000; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; position: sticky; top: 0; z-index: 1000; position: fixed; }
 
         /* --- Hamburger Menu --- */
         .hamburger { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 26px; height: 22px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; }
         .hamburger-line { height: 3px; background: #ffffff; border-radius: 2px; }
-        .hamburger-menu { position: fixed; top: 55px; left: 10px; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); width: 180px; display: none; z-index: 300; overflow: hidden; }
+        .hamburger-menu { position: fixed; top: 55px; left: 10px; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); width: 180px; display: none; z-index: 2000; overflow: hidden; }
         .hamburger-menu a, .hamburger-menu button { display: block; width: 100%; padding: 10px 14px; text-align: left; border: none; background: white; font-size: 14px; cursor: pointer; box-sizing: border-box; }
         .hamburger-menu a { text-decoration: none; color: #333; }
         .hamburger-menu a:hover, .hamburger-menu button:hover { background: #f5f5f5; }
@@ -55,8 +55,8 @@
     </header>
 
     <div class="hamburger-menu" id="hamburgerMenu">
-        <a href="menu.html">Home</a>
-        <a href="history.html">Order History</a>
+        <a href="/menu">Home</a>
+        <a href="/history">Order History</a>
         <button type="button" onclick="logoutUser()">Logout</button>
     </div>
 
@@ -139,7 +139,7 @@
         window.logoutUser = function() {
             if(confirm("Are you sure you want to logout?")) {
                 sessionStorage.clear();
-                window.location.href = "index.html";
+                window.location.href = "/";
             }
         };
     
@@ -242,7 +242,7 @@
             if(confirm("Confirm item received? This ends the session.")) {
                 const id = sessionStorage.getItem('orderId');
                 if (id) await update(ref(db, `orders/${id}`), { status: "Completed" });
-                window.location.href = "history.html";
+                window.location.href = "/history";
             }
         };
     </script>
