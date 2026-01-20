@@ -61,10 +61,10 @@
     </div>
 
     <div class="container">
-        <div class="status-banner">STATUS: DRONE EN ROUTE</div>
+        <div class="status-banner" id="orderStatusText">STATUS: PENDING...</div>
 
         <div class="order-box">
-            <div class="info-row"><span class="info-label">Matric:</span><span class="info-value" id="orderMatric">-</span></div>
+            <div class="info-row"><span class="info-label">Matric Number:</span><span class="info-value" id="orderMatric">-</span></div>
             <div class="info-row"><span class="info-label">Location:</span><span class="info-value" id="orderLocation">-</span></div>
             <div class="info-row"><span class="info-label">Medical Aid:</span><span class="info-value" id="orderItem">-</span></div>
             <div class="info-row"><span class="info-label">Order Time:</span><span class="info-value" id="orderTimestamp">-</span></div>
@@ -114,7 +114,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, update, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, update, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
     
         // Firebase config (Ensure this matches your actual config)
         const firebaseConfig = {
@@ -129,6 +129,10 @@
     
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+
+        // Get the Order ID from the session (saved in menu.html)
+        const orderId = sessionStorage.getItem("orderId");
+        const statusBanner = document.getElementById("orderStatusText");
     
         // --- NAVIGATION & LOGOUT ---
         window.toggleHamburger = function() {
@@ -142,6 +146,27 @@
                 window.location.href = "/";
             }
         };
+
+        if(orderId){
+            // Reference the specific order in Firebase
+            const orderRef = ref(db, 'orders/' + orderId);
+
+            // Listen for any chnages (Updates every time app.py calls set_status)
+            onValue(orderRef, (snapshot) => {
+                const data = snapshot.val();
+                if(data && data.status){
+                    // Update the text on the screen
+                    statusBanner.innerText = "STATUS: " + data.status.toUpperCase();
+
+                    // Change color to Green when reached
+                    if (data.status == "DRONE REACHED!") {
+                        statusBanner.style.background = "#28a745";
+                    }
+                }
+            });
+        }else {
+            statusBanner.innerText = "STATUS: NO ACTIVE ORDER";
+        }
     
         // --- TELEGRAM REPORTING ---
         window.toggleReportModal = () => document.getElementById("reportModal").style.display = "flex";

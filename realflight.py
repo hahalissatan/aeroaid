@@ -4,23 +4,20 @@ import time
 # Initialize the drone
 tello = Tello()
 
-try:
-    # Connect to the drone
-    tello.connect()
-    
-    # Check battery first - very important for AeroAid!
-    print(f"Battery Life: {tello.get_battery()}%")
-    
-    # Takeoff
-    print("Taking off...")
-    tello.takeoff()
-    
-    # Hover for 3 seconds to test stability
-    time.sleep(3)
-    
-    # Land
-    print("Landing...")
-    tello.land()
+# Connect to the drone
+tello.connect()
 
-except Exception as e:
-    print(f"Error: {e}")
+# Check battery level before flight (Safety first!)
+print(f"Battery life: {tello.get_battery()}%")
+
+# Start flight sequence
+tello.takeoff()
+
+# Move forward (Distance is in centimeters, min 20, max 500)
+tello.move_forward(50)
+
+# Wait for 1 second to stabilize
+time.sleep(1)
+
+# Land the drone
+tello.land()

@@ -378,10 +378,14 @@
                 alert("✅ EMERGENCY DISPATCHED!\n\nA message has been sent to HEP. Please stay at " + location + " and look for the AeroAid drone.");
 
                 // 4. Trigger DroneBlocks (This goes to your app.py)
-                fetch('/dispatch', { 
+                await fetch('/dispatch', { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ item: chosenItem, location: location })
+                    body: JSON.stringify({ 
+                        item: chosenItem, 
+                        location: location,
+                        orderId: orderId 
+                    })
                 });
 
                 // 5. Move to status page
