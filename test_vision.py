@@ -3,11 +3,10 @@ import numpy as np
 from djitellopy import Tello
 import time
 
-# --- 1. CONFIGURATION ---
-TARGET_WIDTH = 60    # Pixel width at 100cm distance
-SPEED_LIMIT = 20     # Max speed for centering
-SAFE_ZONE = 25       # How many pixels off-center is "close enough"
-STABLE_TIME = 2.0    # How many seconds to stay centered before auto-hooking
+# --- 1. ORIGINAL STEADY CONFIGURATION ---
+SPEED_LIMIT = 20     # Back to original safe speed
+SAFE_ZONE = 25       # Back to original precision zone
+STABLE_TIME = 1.5    # Back to original stable wait time
 
 # --- 2. SETUP ---
 dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
@@ -24,6 +23,7 @@ is_flying = False
 maneuver_complete = False
 stable_start_time = None
 
+print("READY: Start drone manually at the 50cm - 100cm mark.")
 print("T: Takeoff | L: Land | Q: Quit")
 
 try:
@@ -36,28 +36,26 @@ try:
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         corners, ids, rejected = detector.detectMarkers(gray)
         
-        lr_speed = fb_speed = ud_speed = 0
+        lr_speed = ud_speed = 0
         is_centered = False
 
+        # Only process if we see ID 0 and mission isn't finished
         if ids is not None and 0 in ids and not maneuver_complete:
             idx = np.where(ids == 0)[0][0]
             c = corners[idx][0]
             m_x = int(np.mean(c[:, 0]))
             m_y = int(np.mean(c[:, 1]))
-            current_width = np.linalg.norm(c[0] - c[1])
 
-            # Calculate Errors
+            # Calculate Errors (X and Y only)
             error_x = m_x - center_x
             error_y = center_y - m_y
-            error_z = TARGET_WIDTH - current_width
 
-            # Centering Logic (P-Control)
+            # ORIGINAL SMOOTH GAINS (0.2)
             lr_speed = max(-SPEED_LIMIT, min(SPEED_LIMIT, int(error_x * 0.2)))
             ud_speed = max(-SPEED_LIMIT, min(SPEED_LIMIT, int(error_y * 0.2)))
-            fb_speed = max(-SPEED_LIMIT, min(SPEED_LIMIT, int(error_z * 0.4)))
 
-            # CHECK IF CENTERED
-            if abs(error_x) < SAFE_ZONE and abs(error_y) < SAFE_ZONE and abs(error_z) < 10:
+            # Check if drone is centered in the safe zone
+            if abs(error_x) < SAFE_ZONE and abs(error_y) < SAFE_ZONE:
                 is_centered = True
                 if stable_start_time is None:
                     stable_start_time = time.time()
@@ -67,29 +65,33 @@ try:
 
             # Visual Feedback
             color = (0, 255, 0) if is_centered else (0, 0, 255)
-            cv2.aruco.drawDetectedMarkers(img, corners, ids)
             cv2.circle(img, (m_x, m_y), 10, color, -1)
+            cv2.aruco.drawDetectedMarkers(img, corners, ids)
             
             if stable_start_time:
                 timer = time.time() - stable_start_time
-                cv2.putText(img, f"LOCKING: {timer:.1f}s", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                cv2.putText(img, f"STABILIZING: {timer:.1f}s", (10, 60), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-        # 3. AUTOMATIC MANEUVER TRIGGER
+        # 3. AUTOMATIC HOOKING TRIGGER
         if is_flying and stable_start_time and (time.time() - stable_start_time > STABLE_TIME):
-            print(">>> TARGET LOCKED: AUTOMATIC HOOKING <<<")
-            drone.send_rc_control(0, 0, 0, 0)
-            time.sleep(1)
-            drone.move_forward(50)
-            time.sleep(1)
-            drone.move_up(50)
+            print(">>> TARGET CENTERED. EXECUTING MANEUVER <<<")
+            drone.send_rc_control(0, 0, 0, 0) 
+            time.sleep(1.0) # Full second to stop any remaining wobble
+            
+            drone.move_forward(50) 
+            time.sleep(1.0)
+            drone.move_up(50)      
+            
             print(">>> ITEM SECURED <<<")
             maneuver_complete = True
-            stable_start_time = None # Reset
+            stable_start_time = None 
 
-        if is_flying:
-            drone.send_rc_control(lr_speed, fb_speed, ud_speed, 0)
+        # Apply centering movements (Forward/Backward is always 0)
+        if is_flying and not maneuver_complete:
+            drone.send_rc_control(lr_speed, 0, ud_speed, 0)
 
-        cv2.imshow("AeroAid Auto-Mission", img)
+        cv2.imshow("AeroAid Steady Mission", img)
         key = cv2.waitKey(1) & 0xFF
         if key == ord('t'):
             drone.takeoff()
@@ -103,6 +105,5 @@ try:
 except Exception as e:
     print(f"Error: {e}")
 finally:
-    drone.land()
     drone.streamoff()
     cv2.destroyAllWindows()
