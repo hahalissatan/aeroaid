@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroAid - Selection</title>
+    <style>
+        /* --- Standard Layout --- */
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        header { 
+            background: #b30000; 
+            color: white; 
+            width: 100%; 
+            text-align: center; 
+            padding: 15px 0; 
+            font-size: 24px; 
+            font-weight: bold; 
+            position: fixed; /* Changed from sticky/relative to fixed */
+            top: 0; 
+            left: 0;
+            z-index: 1000; /* High z-index to stay on top of all cards and buttons */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* IMPORTANT: Add this to your body or container to prevent content 
+        from being hidden behind the fixed header */
+        body { 
+            padding-top: 70px; /* Adjust this value based on your header height */
+        }
+
+        /* --- Hamburger Menu --- */
+        .hamburger {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 26px;
+            height: 22px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .hamburger-line {
+            height: 3px;
+            background: #ffffff;
+            border-radius: 2px;
+        }
+        .hamburger-menu {
+            position: fixed;
+            top: 55px;
+            left: 10px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            width: 180px;
+            display: none;
+            z-index: 2000;
+            overflow: hidden;
+        }
+        .hamburger-menu a, .hamburger-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            text-align: left;
+            border: none;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        .hamburger-menu a {
+            text-decoration: none;
+            color: #333;
+        }
+        .hamburger-menu a:hover,
+        .hamburger-menu button:hover {
+            background: #f5f5f5;
+        }
+        .hamburger-menu a.active {
+            background: #ffe6e6;
+            color: #b30000;
+            font-weight: bold;
+        }
+        .hamburger-menu button {
+            color: #333;
+            font-weight: normal;
+            border-top: 1px solid #eee; /* separator line before Logout */
+        }
+        .container { width: 90%; max-width: 500px; margin-top: 20px; }
+        .selection-box { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .home-box { padding-top: 12px; }
+        
+        h2 { font-size: 20px; margin-bottom: 15px; color: #333; }
+        
+        /* Search & Dropdown */
+        .search-wrapper { position: relative; width: 100%; margin-bottom: 20px; }
+        #locSearch { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
+        .loc-dropdown { position: absolute; width: 100%; max-height: 200px; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; overflow-y: auto; display: none; z-index: 1000; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .loc-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #f9f9f9; }
+        .loc-item:hover { background-color: #f0f0f0; color: #b30000; }
+        
+        /* Items Grid */
+        .item-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .item-card { display: flex; border: 1px solid #eee; border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.3s; }
+        .item-card:hover { border-color: #b30000; background: #fff8f8; }
+        .item-card.selected { border: 2.5px solid #b30000; background: #fff0f0; }
+        .item-img { width: 90px; height: 90px; background: #eee; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .item-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .item-info { padding: 10px; flex: 1; }
+        .item-name { font-weight: bold; font-size: 18px; display: block; }
+        .item-desc { font-size: 13px; color: #666; }
+
+        /* Confirm Button */
+        .btn-confirm { width: 100%; padding: 15px; background: #b30000; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-confirm:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* --- POP UP MODAL STYLES --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 200;
+        }
+        .modal-box {
+            background: white; width: 85%; max-width: 350px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); border-top: 8px solid #b30000;
+        }
+        .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #b30000; }
+        .modal-order-info { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin: 15px 0; text-align: left; }
+        .modal-order-info h3 { font-size: 16px; margin: 0 0 12px 0; color: #333; font-weight: bold; }
+        .modal-order-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e9ecef; }
+        .modal-order-row:last-child { border-bottom: none; }
+        .modal-order-label { font-weight: bold; color: #666; font-size: 14px; }
+        .modal-order-value { color: #333; font-size: 14px; font-weight: 500; }
+        .modal-warning { background: #fff3cd; color: #856404; padding: 10px; font-size: 13px; border-radius: 5px; margin: 15px 0; border: 1px solid #ffeeba; }
+        .modal-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 20px; }
+        .btn-cancel { flex: 1; padding: 10px; border: 1px solid #333; background: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-submit { flex: 1; padding: 10px; border: none; background: #b30000; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        /* --- Floating Scroll Buttons --- */
+        .scroll-btns {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .scroll-btn {
+            width: 35px;
+            height: 35px;
+            background: #b30000; /* Matching your AeroAid theme */
+            color: white;
+            border: none;
+            border-radius: 8px; /* Matching your card style */
+            font-size: 17px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: background 0.3s;
+        }
+
+        .scroll-btn:active {
+            background: #800000;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="hamburger" onclick="toggleHamburger()">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </div>
+        AeroAid
+    </header>
+
+    <div class="hamburger-menu" id="hamburgerMenu">
+        <a href="/menu">Home</a>
+        <a href="/history">Order History</a>
+        <button type="button" onclick="logoutUser()">Logout</button>
+    </div>
+
+    <div class="container">
+        <div class="selection-box home-box">
+            <h2 style="margin-bottom: 8px;">Home</h2>
+            <p style="margin-top: 0; margin-bottom: 18px; font-size: 13px; color: #777;">
+                Choose your medical aid and closest location to request an AeroAid drone.
+            </p>
+            <h2>1. Search Location</h2>
+            <div class="search-wrapper">
+                <input type="text" id="locSearch" placeholder="Type location (e.g. Perpustakaan)" autocomplete="off">
+                <div id="locList" class="loc-dropdown"></div>
+            </div>
+
+            <h2>2. Choose Medical Aid</h2>
+            <div class="item-grid">
+                <div class="item-card" onclick="selectItem('AED', this)">
+                    <div class="item-img">
+                        <img src="{{ url_for('static', filename='image/AED.jpg') }}" alt="AED">
+                    </div>
+                    <div class="item-info">
+                        <span class="item-name">AED</span>
+                        <span class="item-desc">Heart Attack / CPR</span>
+                    </div>
+                </div>
+                <div class="item-card" onclick="selectItem('Inhaler', this)">
+                    <div class="item-img">
+                        <img src="{{ url_for('static', filename='image/inhaler.jpeg') }}" alt="Inhaler">
+                    </div>
+                    <div class="item-info">
+                        <span class="item-name">INHALER</span>
+                        <span class="item-desc">Asthma Attack</span>
+                    </div>
+                </div>
+                <div class="item-card" onclick="selectItem('Epipen', this)">
+                    <div class="item-img">
+                        <img src="{{ url_for('static', filename='image/epipen.jpeg') }}" alt="Epipen">
+                    </div>
+                    <div class="item-info">
+                        <span class="item-name">EPIPEN</span>
+                        <span class="item-desc">Allergic Reactions</span>
+                    </div>
+                </div>
+                <div class="item-card" onclick="selectItem('Tourniquet', this)">
+                    <div class="item-img">
+                        <img src="{{ url_for('static', filename='image/cat.jpeg') }}" alt="Tourniquet">
+                    </div>
+                    <div class="item-info">
+                        <span class="item-name">TOURNIQUET & BANDAGE</span>
+                        <span class="item-desc">Severe Bleeding</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-confirm" id="confirmBtn" onclick="showModal()" disabled>CONFIRM ORDER</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="warningModal">
+        <div class="modal-box">
+            <div class="modal-title">⚠️ Confirm Your Order</div>
+            <p style="font-size: 14px; color: #333;">Please review your order details before confirming.</p>
+            
+            <div class="modal-order-info">
+                <h3>Order Details</h3>
+                <div class="modal-order-row">
+                    <span class="modal-order-label">Matric Number:</span>
+                    <span class="modal-order-value" id="modalMatric">-</span>
+                </div>
+                <div class="modal-order-row">
+                    <span class="modal-order-label">Location:</span>
+                    <span class="modal-order-value" id="modalLocation">-</span>
+                </div>
+                <div class="modal-order-row">
+                    <span class="modal-order-label">Medical Aid:</span>
+                    <span class="modal-order-value" id="modalItem">-</span>
+                </div>
+            </div>
+            
+            <div class="modal-warning">
+                <strong>Do not play!</strong><br>
+                Misuse of AeroAid allows for disciplinary action. By clicking Confirm, you accept full responsibility.
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">CANCEL</button>
+                <button class="btn-submit" onclick="submitFinalOrder()">CONFIRM</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="scroll-btns">
+        <button class="scroll-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">▲</button>
+        <button class="scroll-btn" onclick="window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'})">▼</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // --- PASTE YOUR FIREBASE CONFIG HERE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA__9vl0UMRv_hdswgNwpaf9DefqoqbSv8",
+            authDomain: "aeroaid-93195.firebaseapp.com",
+            databaseURL: "https://aeroaid-93195-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "aeroaid-93195",
+            storageBucket: "aeroaid-93195.firebasestorage.app",
+            messagingSenderId: "538007791028",
+            appId: "1:538007791028:web:72844a23d4903bfac77ee1",
+            measurementId: "G-LVSSWZYCM8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- Standard Logic ---
+        const locations = ["Langkasuka", "Dewan Kuliah", "Perpustakaan", "Block A1", "Block B2", "Kafeteria"].sort();
+        let chosenItem = "";
+        const searchInput = document.getElementById("locSearch");
+        const dropdown = document.getElementById("locList");
+
+        // Search functions
+        function renderList(filter="") {
+            const filtered = locations.filter(loc => loc.toLowerCase().includes(filter.toLowerCase()));
+            dropdown.innerHTML = filtered.map(loc => `<div class="loc-item" onclick="selectLoc('${loc}')">${loc}</div>`).join('');
+            dropdown.style.display = filtered.length > 0 ? "block" : "none";
+        }
+        searchInput.addEventListener("focus", () => renderList(searchInput.value));
+        searchInput.addEventListener("input", (e) => renderList(e.target.value));
+        document.addEventListener("click", (e) => { if(!e.target.closest(".search-wrapper")) dropdown.style.display="none"; });
+
+        window.selectLoc = (val) => { searchInput.value = val; dropdown.style.display="none"; checkForm(); }
+        window.selectItem = (item, el) => {
+            chosenItem = item;
+            document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            checkForm();
+        }
+        function checkForm() { document.getElementById("confirmBtn").disabled = !(searchInput.value && chosenItem); }
+
+        // --- HAMBURGER FUNCTIONS ---
+        window.toggleHamburger = function() {
+            const menu = document.getElementById("hamburgerMenu");
+            
+            // Check computed style to handle the initial empty string state
+            const currentDisplay = window.getComputedStyle(menu).display;
+
+            if (currentDisplay === "none") {
+                menu.style.display = "block";
+            } else {
+                menu.style.display = "none";
+            }
+        }
+
+        window.submitFinalOrder = async function() {
+            const location = searchInput.value;
+            const matric = sessionStorage.getItem("userMatric") || "Anonymous";
+            const timestamp = new Date().toISOString();
+
+            const orderData = {
+                matricNumber: matric,
+                location: location,
+                medicalAid: chosenItem,
+                status: "Pending",
+                timestamp: timestamp
+            };
+
+            try {
+                // 1. Save to Firebase
+                const ordersRef = ref(db, 'orders');
+                const newOrderRef = push(ordersRef);
+                const orderId = newOrderRef.key;
+                await set(newOrderRef, orderData);
+                
+                // 2. Save to Session for the next page
+                sessionStorage.setItem("orderId", orderId);
+                sessionStorage.setItem("orderLocation", location);
+                sessionStorage.setItem("orderItem", chosenItem);
+                sessionStorage.setItem("orderTimestamp", timestamp);
+
+                // 3. TELEGRAM MESSAGE (Directly from phone)
+                const botToken = "8517724850:AAFC_PCkqoNr6_cuMPmwWhq-2wlUG75yn38";
+                const chatId = "8098899520"; 
+                
+                const telegramMsg = `🚨 *NEW EMERGENCY DISPATCH* 🚨\n\n` +
+                                    `👤 *Student:* ${matric}\n` +
+                                    `📍 *Location:* ${location}\n` +
+                                    `📦 *Medical Aid:* ${chosenItem}\n\n` +
+                                    `🚁 Drone is launching now!\n` +
+                                    `🆔 *Ref:* ${orderId}`;
+
+                const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(telegramMsg)}&parse_mode=Markdown`;
+
+                // We use fetch to send the telegram message
+                await fetch(telegramUrl);
+                alert("✅ EMERGENCY DISPATCHED!\n\nA message has been sent to HEP. Please stay at " + location + " and look for the AeroAid drone.");
+
+                // 4. Trigger DroneBlocks (This goes to your app.py)
+                await fetch('/dispatch', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        item: chosenItem, 
+                        location: location,
+                        orderId: orderId 
+                    })
+                });
+
+                // 5. Move to status page
+                window.location.href = "/order"; 
+
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+
+        window.logoutUser = function() {
+            if(confirm("Are you sure you want to logout?")) {
+                sessionStorage.clear();
+                window.location.href = "/";
+            }
+        }
+
+        // Close hamburger when clicking outside (Fixed for order.html)
+        document.addEventListener("click", (e) => {
+            const menu = document.getElementById("hamburgerMenu");
+            const burger = document.querySelector(".hamburger");
+            
+            // Check if menu exists and if the click was outside both menu and burger
+            if (menu && burger && menu.style.display === "block") {
+                if (!menu.contains(e.target) && !burger.contains(e.target)) {
+                    menu.style.display = "none";
+                }
+            }
+        });
+
+        // Highlight active menu item (Home on this page)
+        const currentPath = window.location.pathname.split("/").pop() || "menu.html";
+        const links = document.querySelectorAll("#hamburgerMenu a");
+        links.forEach(link => {
+            const href = link.getAttribute("href");
+            if (href === currentPath) {
+                link.classList.add("active");
+            }
+        });
+
+        // --- POP UP FUNCTIONS ---
+        window.showModal = function() {
+            // Populate order details in the modal
+            const location = searchInput.value;
+            const matric = sessionStorage.getItem("userMatric") || "Anonymous";
+            
+            document.getElementById("modalMatric").textContent = matric;
+            document.getElementById("modalLocation").textContent = location;
+            document.getElementById("modalItem").textContent = chosenItem;
+            
+            document.getElementById("warningModal").style.display = "flex";
+        }
+        window.closeModal = function() {
+            document.getElementById("warningModal").style.display = "none";
+        }
+
+
+    </script>
+</body>
+</html>
