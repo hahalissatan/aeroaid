@@ -68,6 +68,10 @@
             <div class="info-row"><span class="info-label">Location:</span><span class="info-value" id="orderLocation">-</span></div>
             <div class="info-row"><span class="info-label">Medical Aid:</span><span class="info-value" id="orderItem">-</span></div>
             <div class="info-row"><span class="info-label">Order Time:</span><span class="info-value" id="orderTimestamp">-</span></div>
+            <div id="photoContainer" style="display:none; text-align:center; margin-top:15px; border-top: 1px solid #eee; padding-top:15px;">
+                <span class="info-label" style="display:block; margin-bottom:10px;">DELIVERY PHOTO:</span>
+                <img id="deliveryPhoto" src="" style="width:100%; border-radius:8px; border: 2px solid #b30000;">
+            </div>
             <div class="info-row" style="border-bottom: none; border-top: 1px solid #eee; margin-top: 5px;">
                 <span class="info-label">HEP Emergency:</span>
                 <span class="info-value">
@@ -154,13 +158,20 @@
             // Listen for any chnages (Updates every time app.py calls set_status)
             onValue(orderRef, (snapshot) => {
                 const data = snapshot.val();
-                if(data && data.status){
-                    // Update the text on the screen
-                    statusBanner.innerText = "STATUS: " + data.status.toUpperCase();
-
-                    // Change color to Green when reached
-                    if (data.status == "DRONE REACHED!") {
-                        statusBanner.style.background = "#28a745";
+                if(data) {
+                    if(data.status) {
+                        statusBanner.innerText = "STATUS: " + data.status.toUpperCase();
+                        if (data.status == "DRONE REACHED!") {
+                            statusBanner.style.background = "#28a745";
+                        }
+                    }
+                    
+                    // --- NEW: Check if a photo exists ---
+                    if(data.delivery_photo) {
+                        const photoContainer = document.getElementById("photoContainer");
+                        const photoImg = document.getElementById("deliveryPhoto");
+                        photoImg.src = data.delivery_photo;
+                        photoContainer.style.display = "block"; // Show the photo
                     }
                 }
             });
