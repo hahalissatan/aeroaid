@@ -14,10 +14,11 @@ print(f"Battery life: {tello.get_battery()}%")
 tello.takeoff()
 
 # Move forward (Distance is in centimeters, min 20, max 500)
+tello.move_up(20)
 tello.move_forward(50)
-
+tello.move_up(50)
 # Wait for 1 second to stabilize
-time.sleep(1)
+time.sleep(10)
 
 # Land the drone
 tello.land()
